@@ -25,9 +25,13 @@ namespace qqbot
 		}
 	}
 
-	int init(httplib::Server& server)
+	int init(httplib::Server& server, qqbot::Permission& permission)
 	{
+		//插件注册
 		qqbot::reg::init();
+
+		//权限组导入
+		permission.init();
 
 		server.Post("/", splitUserNGroup);
 		server.listen("127.0.0.1", 5800);

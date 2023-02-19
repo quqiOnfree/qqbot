@@ -14,18 +14,26 @@ namespace qqbot
 		Permission();
 		~Permission();
 
-		bool hasGroupDefaultPermission(const std::string& permissionName);
-		qjson::JObject getGroupDefaultPermission(const std::string& permissionName);
-		void setGroupDefaultPermission(const std::string& permissionName, const qjson::JObject& json);
+		void init();
+		void save();
 
-		bool hasSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
-		qjson::JObject getSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
-		void setSingleGroupDefaultPermission(int groupID, const std::string& permissionName, const qjson::JObject& json);
+		bool					hasGroupDefaultPermission(const std::string& permissionName);
+		const qjson::JObject&	getGroupDefaultPermission(const std::string& permissionName);
+		void					setGroupDefaultPermission(const std::string& permissionName, const qjson::JObject& json);
 
-		bool hasUserOperator(int userID);
-		void setUserOperator(int userID, bool boolean);
+		bool					hasSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
+		const qjson::JObject&	getSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
+		void					setSingleGroupDefaultPermission(int groupID, const std::string& permissionName, const qjson::JObject& json);
+
+		bool					hasUserOperator(int userID);
+		void					setUserOperator(int userID, bool boolean);
+		const qjson::JObject&	getUserOperatorList();
+
+	protected:
+		void makeConfigFile();
 
 	private:
-
+		const std::string	m_filepath;
+		qjson::JObject		m_json;
 	};
 }

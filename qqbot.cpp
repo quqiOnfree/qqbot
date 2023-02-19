@@ -3,11 +3,12 @@
 
 #include "qqbot.h"
 
-httplib::Server server;
+httplib::Server		server;
+qqbot::Permission	permission;
 
 int main()
 {
-	qqbot::init(server);
+	qqbot::init(server, permission);
 
 	return 0;
 }
