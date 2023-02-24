@@ -11,8 +11,56 @@ file(
 	"${CMAKE_SOURCE_DIR}/include/*.cpp"
 )
 
+file(
+	GLOB SOURCEFILE
+	"${CMAKE_SOURCE_DIR}/command/*.h"
+	"${CMAKE_SOURCE_DIR}/command/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/cppPlugin/*.h"
+	"${CMAKE_SOURCE_DIR}/cppPlugin/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/definition/*.h"
+	"${CMAKE_SOURCE_DIR}/definition/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/group/*.h"
+	"${CMAKE_SOURCE_DIR}/group/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/init/*.h"
+	"${CMAKE_SOURCE_DIR}/init/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/network/*.h"
+	"${CMAKE_SOURCE_DIR}/network/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/permission/*.h"
+	"${CMAKE_SOURCE_DIR}/permission/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/qqbot/*.h"
+	"${CMAKE_SOURCE_DIR}/qqbot/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/register/*.h"
+	"${CMAKE_SOURCE_DIR}/register/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/singleUser/*.h"
+	"${CMAKE_SOURCE_DIR}/singleUser/*.cpp"
+)
+
+include_directories(
+	"${CMAKE_SOURCE_DIR}/include"
+
+	"${CMAKE_SOURCE_DIR}/command/"
+	"${CMAKE_SOURCE_DIR}/cppPlugin/"
+	"${CMAKE_SOURCE_DIR}/definition/"
+	"${CMAKE_SOURCE_DIR}/group/"
+	"${CMAKE_SOURCE_DIR}/init/"
+	"${CMAKE_SOURCE_DIR}/network/"
+	"${CMAKE_SOURCE_DIR}/permission/"
+	"${CMAKE_SOURCE_DIR}/qqbot/"
+	"${CMAKE_SOURCE_DIR}/register/"
+	"${CMAKE_SOURCE_DIR}/singleUser/"
+	)
+
 # 将源代码添加到此项目的可执行文件。
-add_executable (qqbot "qqbot.cpp" "qqbot.h" "httplib.h" "init.h" "init.cpp"  "singleUser.h" "singleUser.cpp" "group.cpp" "group.h" "Json.cpp" "Json.h" "${INCLUDEFILE}" "permission.h" "permission.cpp" "register.h" "register.cpp" "cppPlugin.h" "command.h" "command.cpp" "network.h" "network.cpp" "definition.h")
+add_executable (qqbot "${INCLUDEFILE}" "${SOURCEFILE}")
 
 if (MSVC)
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /O2 /Ot /GL /Gy /utf-8")

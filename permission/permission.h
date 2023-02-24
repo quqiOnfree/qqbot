@@ -4,7 +4,7 @@
 #include <string_view>
 #include <fstream>
 
-#include "Json.h"
+#include <Json.h>
 
 namespace qqbot
 {

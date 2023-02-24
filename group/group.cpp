@@ -1,9 +1,10 @@
 ﻿#include "group.h"
 
 #include <string>
-#include "Json.h"
+#include <Json.h>
 
 #include "permission.h"
+#include "network.h"
 
 extern qqbot::Permission permission;
 
@@ -24,7 +25,7 @@ namespace qqbot
 
 		if (senderUID == 2098332747 && groupID == 647026133)
 		{
-			sendmsg(groupID, senderUID, "你好！");
+			Network::sendGroupMessage(groupID, senderUID, "你好！");
 		}
 
 		return {};
