@@ -5,6 +5,7 @@
 
 httplib::Server		server;
 qqbot::Permission	permission;
+qqbot::Command		command(&permission);
 
 int main()
 {

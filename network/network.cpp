@@ -2,12 +2,12 @@
 
 namespace qqbot
 {
-	void Network::sendGroupMessage(int groupID, int senderUID, const std::string& message)
+	void Network::sendGroupMessage(int groupID, const std::string& message)
 	{
 		static httplib::Client cli("http://127.0.0.1:5700");
 		httplib::Params params;
 		httplib::Headers headers;
-		params.insert({ {"group_id", std::to_string(groupID)}, {"user_id", std::to_string(senderUID)}, {"message", message} });
+		params.insert({ {"group_id", std::to_string(groupID)}, {"message", message} });
 
 		cli.Get("/send_group_msg", params, headers);
 	};

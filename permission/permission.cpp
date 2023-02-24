@@ -45,9 +45,79 @@ namespace qqbot
 
 	void Permission::save()
 	{
+		//保存config.json
 		std::ofstream outfile(m_filepath);
 
 		outfile << qjson::JWriter::fastFormatWrite(m_json);
+	}
+
+	bool Permission::hasGroupDefaultPermission(const std::string& permissionName)
+	{
+		if (m_json["permission"]["default"].hasMember(permissionName)
+			)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool Permission::getGroupDefaultPermission(const std::string& permissionName)
+	{
+		if (this->hasGroupDefaultPermission(permissionName) &&
+			m_json["permission"]["default"][permissionName.c_str()].getBool()
+			)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	void Permission::setGroupDefaultPermission(const std::string& permissionName, bool boolean)
+	{
+		m_json["permission"]["default"][permissionName.c_str()] = boolean;
+		this->save();
+	}
+
+
+	bool Permission::hasSingleGroupDefaultPermission(int groupID, const std::string& permissionName)
+	{
+		if (m_json["permission"].hasMember("group") &&
+			m_json["permission"]["group"].hasMember(std::to_string(groupID)) &&
+			m_json["permission"]["group"][std::to_string(groupID).c_str()].hasMember(permissionName)
+			)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool Permission::getSingleGroupDefaultPermission(int groupID, const std::string& permissionName)
+	{
+		if (this->hasSingleGroupDefaultPermission(groupID, permissionName) &&
+			m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()].getBool()
+			)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	void Permission::setSingleGroupDefaultPermission(int groupID, const std::string& permissionName, bool boolean)
+	{
+		m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()] = boolean;
+		this->save();
 	}
 
 	bool Permission::hasUserOperator(int userID)
@@ -75,13 +145,13 @@ namespace qqbot
 		if (itor != list.end() && !boolean)
 		{
 			list.erase(itor);
-			return;
 		}
 		else if (boolean)
 		{
 			list.push_back(userID);
-			return;
 		}
+
+		this->save();
 	}
 
 	const qjson::JObject& Permission::getUserOperatorList()

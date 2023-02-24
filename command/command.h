@@ -19,10 +19,14 @@ namespace qqbot
 		using UserHandler = std::function<void(int, const std::string&, std::vector<std::string>)>;
 
 	public:
-		Command();
+		Command() = delete;
+		Command(qqbot::Permission* permission);
+		Command(const Command&) = delete;
+		Command(Command&& command) noexcept;
 		~Command();
 
-		void init(qqbot::Permission* permission);
+		Command& operator=(const Command&) = delete;
+		Command& operator=(Command&& command) noexcept;
 
 		void addCommand(const std::string& commandName, GroupHandler handler);
 		void addCommand(const std::string& commandName, UserHandler handler);

@@ -18,12 +18,12 @@ namespace qqbot
 		void save();
 
 		bool					hasGroupDefaultPermission(const std::string& permissionName);
-		const qjson::JObject&	getGroupDefaultPermission(const std::string& permissionName);
-		void					setGroupDefaultPermission(const std::string& permissionName, const qjson::JObject& json);
+		bool					getGroupDefaultPermission(const std::string& permissionName);
+		void					setGroupDefaultPermission(const std::string& permissionName, bool boolean);
 
 		bool					hasSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
-		const qjson::JObject&	getSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
-		void					setSingleGroupDefaultPermission(int groupID, const std::string& permissionName, const qjson::JObject& json);
+		bool					getSingleGroupDefaultPermission(int groupID, const std::string& permissionName);
+		void					setSingleGroupDefaultPermission(int groupID, const std::string& permissionName, bool boolean);
 
 		bool					hasUserOperator(int userID);
 		void					setUserOperator(int userID, bool boolean);

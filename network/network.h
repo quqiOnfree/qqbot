@@ -11,7 +11,7 @@ namespace qqbot
 		Network() = default;
 		~Network() = default;
 
-		static void sendGroupMessage(int groupID, int senderUID, const std::string& message);
+		static void sendGroupMessage(int groupID, const std::string& message);
 		static void sendUserMessage(int senderUID, const std::string& message);
 	};
 }

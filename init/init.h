@@ -3,6 +3,7 @@
 #include <httplib.h>
 
 #include "permission.h"
+#include "command.h"
 
 namespace qqbot
 {
