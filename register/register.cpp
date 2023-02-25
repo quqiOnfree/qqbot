@@ -8,6 +8,7 @@ namespace qqbot
 {
 	void Register::init()
 	{
+		//添加mcrcon插件
 		this->addPlugin(std::make_shared<MCRCON::MCRCONPlugin>());
 	}
 

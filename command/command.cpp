@@ -38,12 +38,12 @@ namespace qqbot
 						auto num = qjson::JParser::fastParse(Args[2]);
 						if (num.getType() == qjson::JValueType::JInt && Args[4] == "true")
 						{
-							m_permission->setSingleGroupDefaultPermission(static_cast<long long>(num.getInt()), Args[3], true);
+							m_permission->setSingleGroupDefaultPermission(num.getInt(), Args[3], true);
 							Network::sendGroupMessage(groupID, "成功设置");
 						}
 						else if (num.getType() == qjson::JValueType::JInt && Args[4] == "false")
 						{
-							m_permission->setSingleGroupDefaultPermission(static_cast<long long>(num.getInt()), Args[3], false);
+							m_permission->setSingleGroupDefaultPermission(num.getInt(), Args[3], false);
 							Network::sendGroupMessage(groupID, "成功设置");
 						}
 						else
@@ -162,11 +162,13 @@ namespace qqbot
 		const std::string& command,
 		std::vector<std::string> args)
 	{
+		//查找指令
 		if (m_GroupHandlers.find(command) == m_GroupHandlers.end())
 		{
 			throw std::exception("could not find this command");
 		}
 
+		//是否是operator
 		if (m_permission->hasUserOperator(senderID))
 		{
 			m_GroupHandlers[command](groupID, senderID, command, args);
@@ -174,6 +176,7 @@ namespace qqbot
 		}
 		else if (m_permission->hasSingleGroupDefaultPermission(groupID, command))
 		{
+			//是否在个性化群设置中有这个
 			if (m_permission->getSingleGroupDefaultPermission(groupID, command))
 			{
 				m_GroupHandlers[command](groupID, senderID, command, args);
@@ -186,6 +189,7 @@ namespace qqbot
 		}
 		else if (m_permission->hasGroupDefaultPermission(command))
 		{
+			//查找默认群权限设置
 			if (m_permission->getGroupDefaultPermission(command))
 			{
 				m_GroupHandlers[command](groupID, senderID, command, args);
@@ -206,11 +210,17 @@ namespace qqbot
 		const std::string& command,
 		std::vector<std::string> args)
 	{
+		//此函数未完善!!!
+		//此函数未完善!!!
+		//此函数未完善!!!
+
+		//查找是否有这个指令
 		if (m_GroupHandlers.find(command) == m_GroupHandlers.end())
 		{
 			throw std::exception("could not find this command");
 		}
 
+		//是否是operator
 		if (m_permission->hasUserOperator(senderID))
 		{
 			m_UserHandlers[command](senderID, command, args);

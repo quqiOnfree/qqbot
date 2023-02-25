@@ -10,6 +10,7 @@ namespace qqbot
 {
 	void splitUserNGroup(const httplib::Request& req, httplib::Response& res)
 	{
+		//从go-cqhttp获取到的json消息
 		auto getjson = qjson::JParser::fastParse(req.body);
 
 		if (getjson["message_type"] == "private")
@@ -35,6 +36,7 @@ namespace qqbot
 		pluginRegister.init();
 		pluginRegister.run();
 
+		//http服务器开启
 		server.Post("/", splitUserNGroup);
 		server.listen("127.0.0.1", 5800);
 		return 0;

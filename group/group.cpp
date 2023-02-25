@@ -31,6 +31,7 @@ namespace qqbot
 		if (message.size() <= 1ll)
 			return {};
 
+		//string按空格分割函数
 		auto split = [](const std::string& data) {
 			std::vector<std::string> dataList;
 
@@ -50,21 +51,26 @@ namespace qqbot
 			return dataList;
 		};
 
+		//判断消息第一个字符是 '!'
 		if (message.size() > 1 && message[0] == '!')
 		{
+			//分割后的参数
 			std::vector<std::string> parseString = split(message.substr(1));
 
+			//如果args为0就报错
 			if (parseString.empty())
 			{
 				Network::sendGroupMessage(groupID, "输入非法");
 				return {};
 			}
 
+			//指令名称
 			std::string commandName = parseString[0];
 			parseString.erase(parseString.begin());
 
 			try
 			{
+				//群消息处理
 				command.groupExcute(groupID, senderUID, commandName, std::move(parseString));
 			}
 			catch (const std::exception& e)

@@ -14,22 +14,34 @@ namespace qqbot
 		Permission();
 		~Permission();
 
+		//初始化设置
 		void init();
+		//配置文件保存
 		void save();
 
-		bool					hasGroupDefaultPermission(const std::string& permissionName);
-		bool					getGroupDefaultPermission(const std::string& permissionName);
-		void					setGroupDefaultPermission(const std::string& permissionName, bool boolean);
+		//判断是否有默认群权限设置
+		bool hasGroupDefaultPermission(const std::string& permissionName);
+		//获取默认群权限设置
+		bool getGroupDefaultPermission(const std::string& permissionName);
+		//设置默认群权限设置
+		void setGroupDefaultPermission(const std::string& permissionName, bool boolean);
 
-		bool					hasSingleGroupDefaultPermission(long long groupID, const std::string& permissionName);
-		bool					getSingleGroupDefaultPermission(long long groupID, const std::string& permissionName);
-		void					setSingleGroupDefaultPermission(long long groupID, const std::string& permissionName, bool boolean);
+		//判断是否有个性化群权限设置
+		bool hasSingleGroupDefaultPermission(long long groupID, const std::string& permissionName);
+		//获取个性化群权限
+		bool getSingleGroupDefaultPermission(long long groupID, const std::string& permissionName);
+		//设置个性化群权限
+		void setSingleGroupDefaultPermission(long long groupID, const std::string& permissionName, bool boolean);
 
-		bool					hasUserOperator(long long userID);
-		void					setUserOperator(long long userID, bool boolean);
-		const qjson::JObject&	getUserOperatorList();
+		//获取是否是operator
+		bool hasUserOperator(long long userID);
+		//设置operator
+		void setUserOperator(long long userID, bool boolean);
+		//获取operator列表
+		const qjson::JObject& getUserOperatorList();
 
 	protected:
+		//配置文件初始化
 		void makeConfigFile();
 
 	private:
