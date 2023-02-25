@@ -6,10 +6,11 @@
 httplib::Server		server;
 qqbot::Permission	permission;
 qqbot::Command		command(&permission);
+qqbot::Register		pluginRegister;
 
 int main()
 {
-	qqbot::init(server, permission);
+	qqbot::init(server, permission, pluginRegister);
 
 	return 0;
 }

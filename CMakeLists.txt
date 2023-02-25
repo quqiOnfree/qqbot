@@ -19,6 +19,12 @@ file(
 	"${CMAKE_SOURCE_DIR}/cppPlugin/*.h"
 	"${CMAKE_SOURCE_DIR}/cppPlugin/*.cpp"
 
+	"${CMAKE_SOURCE_DIR}/plugin/*.h"
+	"${CMAKE_SOURCE_DIR}/plugin/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/pluginLibrary/*.h"
+	"${CMAKE_SOURCE_DIR}/pluginLibrary/*.cpp"
+
 	"${CMAKE_SOURCE_DIR}/definition/*.h"
 	"${CMAKE_SOURCE_DIR}/definition/*.cpp"
 
@@ -57,16 +63,18 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/qqbot/"
 	"${CMAKE_SOURCE_DIR}/register/"
 	"${CMAKE_SOURCE_DIR}/singleUser/"
+	"${CMAKE_SOURCE_DIR}/plugin/"
+	"${CMAKE_SOURCE_DIR}/pluginLibrary/"
 	)
 
-# 将源代码添加到此项目的可执行文件。
-add_executable (qqbot "${INCLUDEFILE}" "${SOURCEFILE}")
-
 if (MSVC)
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /O2 /Ot /GL /Gy /utf-8")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /utf-8")
 
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /utf-8")
 endif(MSVC)
+
+# 将源代码添加到此项目的可执行文件。
+add_executable (qqbot "${INCLUDEFILE}" "${SOURCEFILE}")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET qqbot PROPERTY CXX_STANDARD 20)

@@ -5,7 +5,6 @@
 
 #include "singleUser.h"
 #include "group.h"
-#include "register.h"
 
 namespace qqbot
 {
@@ -25,13 +24,16 @@ namespace qqbot
 		}
 	}
 
-	int init(httplib::Server& server, qqbot::Permission& permission)
+	int init(httplib::Server& server, qqbot::Permission& permission, qqbot::Register& pluginRegister)
 	{
-		//插件注册
-		qqbot::reg::init();
+		system("chcp 65001");
 
 		//权限组导入
 		permission.init();
+
+		//插件注册
+		pluginRegister.init();
+		pluginRegister.run();
 
 		server.Post("/", splitUserNGroup);
 		server.listen("127.0.0.1", 5800);

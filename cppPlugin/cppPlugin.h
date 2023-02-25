@@ -1,17 +1,27 @@
 ﻿#pragma once
 
-#include "Json.h"
+#include <string>
+
+#include "command.h"
+#include "permission.h"
 
 namespace qqbot
 {
-	class CPPPlugin
+	struct PluginInfo
+	{
+		std::string name;
+		std::string author;
+		std::string version;
+	};
+
+	class CppPlugin
 	{
 	public:
-		CPPPlugin() = default;
+		CppPlugin() = default;
+		CppPlugin(const CppPlugin&) = delete;
+		~CppPlugin() = default;
 
-		~CPPPlugin() = default;
-
-		CPPPlugin& operator =(const CPPPlugin&) = delete;
+		CppPlugin& operator =(const CppPlugin&) = delete;
 
 		virtual void onLoad()
 		{
@@ -26,7 +36,7 @@ namespace qqbot
 		}
 
 	public:
-		qjson::JObject pluginInfo;
+		PluginInfo pluginInfo;
 
 	private:
 

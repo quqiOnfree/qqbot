@@ -12,11 +12,13 @@ namespace qqbot
 	class Command
 	{
 	public:
+		//群消息处理函数模板
 		//args: groupID, senderID, commandName, Args
-		using GroupHandler = std::function<void(int, int, const std::string&, std::vector<std::string>)>;
+		using GroupHandler = std::function<void(long long, long long, const std::string&, std::vector<std::string>)>;
 		
+		//单人消息处理函数模板
 		//args: senderID, commandName, Args
-		using UserHandler = std::function<void(int, const std::string&, std::vector<std::string>)>;
+		using UserHandler = std::function<void(long long, const std::string&, std::vector<std::string>)>;
 
 	public:
 		Command() = delete;
@@ -31,12 +33,14 @@ namespace qqbot
 		void addCommand(const std::string& commandName, GroupHandler handler);
 		void addCommand(const std::string& commandName, UserHandler handler);
 
-		void groupExcute(int groupID,
-			int senderID,
+		//群消息处理
+		void groupExcute(long long groupID,
+			long long senderID,
 			const std::string& command,
 			std::vector<std::string> args);
 
-		void userExcute(int senderID,
+		//私聊消息处理
+		void userExcute(long long senderID,
 			const std::string& command,
 			std::vector<std::string> args);
 

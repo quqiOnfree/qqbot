@@ -2,7 +2,7 @@
 
 namespace qqbot
 {
-	void Network::sendGroupMessage(int groupID, const std::string& message)
+	void Network::sendGroupMessage(long long groupID, const std::string& message)
 	{
 		static httplib::Client cli("http://127.0.0.1:5700");
 		httplib::Params params;
@@ -12,7 +12,7 @@ namespace qqbot
 		cli.Get("/send_group_msg", params, headers);
 	};
 
-	void Network::sendUserMessage(int senderUID, const std::string& message)
+	void Network::sendUserMessage(long long senderUID, const std::string& message)
 	{
 		static httplib::Client cli("http://127.0.0.1:5700");
 		httplib::Params params;

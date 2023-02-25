@@ -49,6 +49,8 @@ namespace qqbot
 		std::ofstream outfile(m_filepath);
 
 		outfile << qjson::JWriter::fastFormatWrite(m_json);
+
+		outfile.close();
 	}
 
 	bool Permission::hasGroupDefaultPermission(const std::string& permissionName)
@@ -85,7 +87,7 @@ namespace qqbot
 	}
 
 
-	bool Permission::hasSingleGroupDefaultPermission(int groupID, const std::string& permissionName)
+	bool Permission::hasSingleGroupDefaultPermission(long long groupID, const std::string& permissionName)
 	{
 		if (m_json["permission"].hasMember("group") &&
 			m_json["permission"]["group"].hasMember(std::to_string(groupID)) &&
@@ -100,7 +102,7 @@ namespace qqbot
 		}
 	}
 
-	bool Permission::getSingleGroupDefaultPermission(int groupID, const std::string& permissionName)
+	bool Permission::getSingleGroupDefaultPermission(long long groupID, const std::string& permissionName)
 	{
 		if (this->hasSingleGroupDefaultPermission(groupID, permissionName) &&
 			m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()].getBool()
@@ -114,13 +116,13 @@ namespace qqbot
 		}
 	}
 
-	void Permission::setSingleGroupDefaultPermission(int groupID, const std::string& permissionName, bool boolean)
+	void Permission::setSingleGroupDefaultPermission(long long groupID, const std::string& permissionName, bool boolean)
 	{
 		m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()] = boolean;
 		this->save();
 	}
 
-	bool Permission::hasUserOperator(int userID)
+	bool Permission::hasUserOperator(long long userID)
 	{
 		qjson::list_t& list = m_json["permission"]["op"].getList();
 
@@ -134,7 +136,7 @@ namespace qqbot
 		return false;
 	}
 
-	void Permission::setUserOperator(int userID, bool boolean)
+	void Permission::setUserOperator(long long userID, bool boolean)
 	{
 		qjson::list_t& list = m_json["permission"]["op"].getList();
 		auto itor = std::find(list.begin(),
@@ -145,6 +147,10 @@ namespace qqbot
 		if (itor != list.end() && !boolean)
 		{
 			list.erase(itor);
+		}
+		else if (itor != list.end() && boolean)
+		{
+			return;
 		}
 		else if (boolean)
 		{
@@ -168,11 +174,9 @@ namespace qqbot
 
 		std::ofstream outfile("./config/config.json");
 
-		qjson::JObject json;
+		m_json["permission"]["op"].push_back(2098332747);
+		m_json["permission"]["default"]["help"] = true;
 
-		json["permission"]["op"].push_back(2098332747);
-		json["permission"]["default"]["command"].push_back("help");
-
-		outfile << qjson::JWriter::fastFormatWrite(json);
+		outfile << qjson::JWriter::fastFormatWrite(m_json);
 	}
 }

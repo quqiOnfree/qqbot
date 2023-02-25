@@ -7,7 +7,7 @@ namespace qqbot
 	httplib::Response privateMethod(const httplib::Request& req)
 	{
 		auto getjson = qjson::JParser::fastParse(req.body);
-		int senderUID = static_cast<int>(getjson["sender"]["user_id"].getInt());
+		long long senderUID = getjson["sender"]["user_id"].getInt();
 		httplib::Client cli("http://127.0.0.1:5700");
 
 		{

@@ -9,7 +9,7 @@ namespace qqbot
 {
 	Command::~Command()
 	{
-
+		m_permission = nullptr;
 	}
 
 	Command::Command(qqbot::Permission* permission)
@@ -18,15 +18,16 @@ namespace qqbot
 		m_permission = permission;
 
 		//添加permission的函数,因为permission没有自定义的函数 :(
-		this->addCommand("permission", [this, &permission](int groupID, int senderID, const std::string& commandName, std::vector<std::string> Args) {
-			
-			if (!permission->hasUserOperator(senderID))
+		this->addCommand("permission",
+			[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
+			{
+			if (!m_permission->hasUserOperator(senderID))
 			{
 				Network::sendGroupMessage(groupID, "你没有权限");
 			}
 			else if (Args.empty())
 			{
-				Network::sendGroupMessage(groupID, "set	group/user id permissionName true/false -设置");
+				Network::sendGroupMessage(groupID, "permission set group/user id permissionName true/false -设置");
 			}
 			else if (Args.size() == 5)
 			{
@@ -37,12 +38,12 @@ namespace qqbot
 						auto num = qjson::JParser::fastParse(Args[2]);
 						if (num.getType() == qjson::JValueType::JInt && Args[4] == "true")
 						{
-							permission->setSingleGroupDefaultPermission(static_cast<int>(num.getInt()), Args[3], true);
+							m_permission->setSingleGroupDefaultPermission(static_cast<long long>(num.getInt()), Args[3], true);
 							Network::sendGroupMessage(groupID, "成功设置");
 						}
 						else if (num.getType() == qjson::JValueType::JInt && Args[4] == "false")
 						{
-							permission->setSingleGroupDefaultPermission(static_cast<int>(num.getInt()), Args[3], false);
+							m_permission->setSingleGroupDefaultPermission(static_cast<long long>(num.getInt()), Args[3], false);
 							Network::sendGroupMessage(groupID, "成功设置");
 						}
 						else
@@ -70,6 +71,60 @@ namespace qqbot
 			}
 
 			});
+
+		//添加operator的函数
+		this->addCommand("op",
+			[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
+			{
+				if (Args.empty())
+				{
+					Network::sendGroupMessage(groupID, "op userid -添加管理员");
+				}
+				else if (Args.size() == 1)
+				{
+					auto num = qjson::JParser::fastParse(Args[0]);
+					if (num.getType() == qjson::JValueType::JInt)
+					{
+						m_permission->setUserOperator(num.getInt(), true);
+						Network::sendGroupMessage(groupID, "设置成功");
+					}
+					else
+					{
+						Network::sendGroupMessage(groupID, "参数错误");
+					}
+				}
+				else
+				{
+					Network::sendGroupMessage(groupID, "参数错误");
+				}
+			});
+
+		//删除operator的函数
+		this->addCommand("deop",
+			[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
+			{
+				if (Args.empty())
+				{
+					Network::sendGroupMessage(groupID, "deop userid -删除管理员");
+				}
+				else if (Args.size() == 1)
+				{
+					auto num = qjson::JParser::fastParse(Args[0]);
+					if (num.getType() == qjson::JValueType::JInt)
+					{
+						//m_permission->setUserOperator(num.getInt(), false);
+						Network::sendGroupMessage(groupID, "设置成功");
+					}
+					else
+					{
+						Network::sendGroupMessage(groupID, "参数错误");
+					}
+				}
+				else
+				{
+					Network::sendGroupMessage(groupID, "参数错误");
+				}
+			});
 	}
 
 	Command::Command(Command&& command) noexcept
@@ -92,16 +147,18 @@ namespace qqbot
 
 	void Command::addCommand(const std::string& commandName, Command::GroupHandler handler)
 	{
+		//添加群指令
 		m_GroupHandlers[commandName] = handler;
 	}
 
 	void Command::addCommand(const std::string& commandName, Command::UserHandler handler)
 	{
+		//添加单人指令
 		m_UserHandlers[commandName] = handler;
 	}
 
-	void Command::groupExcute(int groupID,
-		int senderID,
+	void Command::groupExcute(long long groupID,
+		long long senderID,
 		const std::string& command,
 		std::vector<std::string> args)
 	{
@@ -145,7 +202,7 @@ namespace qqbot
 		}
 	}
 
-	void Command::userExcute(int senderID,
+	void Command::userExcute(long long senderID,
 		const std::string& command,
 		std::vector<std::string> args)
 	{
