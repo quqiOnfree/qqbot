@@ -70,7 +70,9 @@ namespace qqbot
 				Network::sendGroupMessage(groupID, "没有符合的指令");
 			}
 
-			});
+			},
+			"permission set group/user id permissionName true/false -设置"
+			);
 
 		//添加operator的函数
 		this->addCommand("op",
@@ -97,7 +99,9 @@ namespace qqbot
 				{
 					Network::sendGroupMessage(groupID, "参数错误");
 				}
-			});
+			},
+			"op userid -添加管理员"
+			);
 
 		//删除operator的函数
 		this->addCommand("deop",
@@ -124,7 +128,92 @@ namespace qqbot
 				{
 					Network::sendGroupMessage(groupID, "参数错误");
 				}
-			});
+			},
+			"deop userid -删除管理员"
+			);
+
+		//添加help函数
+		this->addCommand("help",
+			[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
+			{
+				if (Args.empty())
+				{
+					std::string helpMsg;
+
+					for (auto i = m_GroupHandlers.begin(); i != m_GroupHandlers.end(); i++)
+					{
+						bool canUseCommand = false;
+						if (m_permission->hasUserOperator(senderID))
+						{
+							canUseCommand = true;
+						}
+						else if (m_permission->hasSingleGroupDefaultPermission(groupID, i->first))
+						{
+							if (m_permission->getSingleGroupDefaultPermission(groupID, i->first))
+							{
+								canUseCommand = true;
+							}
+							else
+							{
+								continue;
+							}
+						}
+						else if (m_permission->hasGroupDefaultPermission(i->first))
+						{
+							if (m_permission->getGroupDefaultPermission(i->first))
+							{
+								canUseCommand = true;
+							}
+							else
+							{
+								continue;
+							}
+						}
+
+						if (canUseCommand)
+						{
+							helpMsg += m_groupCommandDescriptions[i->first] + "\n";
+						}
+					}
+
+					Network::sendGroupMessage(groupID, helpMsg);
+				}
+				else
+				{
+					if (m_permission->hasUserOperator(senderID))
+					{
+						Network::sendGroupMessage(groupID, m_groupCommandDescriptions[Args[0]]);
+						return;
+					}
+					else if (m_permission->hasSingleGroupDefaultPermission(groupID, Args[0]))
+					{
+						if (m_permission->getSingleGroupDefaultPermission(groupID, Args[0]))
+						{
+							Network::sendGroupMessage(groupID, m_groupCommandDescriptions[Args[0]]);
+							return;
+						}
+						else
+						{
+							Network::sendGroupMessage(groupID, "你没有此命令权限");
+							return;
+						}
+					}
+					else if (m_permission->hasGroupDefaultPermission(Args[0]))
+					{
+						if (m_permission->getGroupDefaultPermission(Args[0]))
+						{
+							Network::sendGroupMessage(groupID, m_groupCommandDescriptions[Args[0]]);
+							return;
+						}
+						else
+						{
+							Network::sendGroupMessage(groupID, "你没有此命令权限");
+							return;
+						}
+					}
+				}
+			}
+			, "help -帮助");
 	}
 
 	Command::Command(Command&& command) noexcept
@@ -145,16 +234,28 @@ namespace qqbot
 		return *this;
 	}
 
-	void Command::addCommand(const std::string& commandName, Command::GroupHandler handler)
+	void Command::addCommand(const std::string& commandName, Command::GroupHandler handler, const std::string& description)
 	{
+		if (m_GroupHandlers.find(commandName) != m_GroupHandlers.end())
+		{
+			throw THROW_ERROR("已经存在此指令！");
+		}
+
 		//添加群指令
 		m_GroupHandlers[commandName] = handler;
+		m_groupCommandDescriptions[commandName] = description;
 	}
 
-	void Command::addCommand(const std::string& commandName, Command::UserHandler handler)
+	void Command::addCommand(const std::string& commandName, Command::UserHandler handler, const std::string& description)
 	{
+		if (m_UserHandlers.find(commandName) != m_UserHandlers.end())
+		{
+			throw THROW_ERROR("已经存在此指令！");
+		}
+
 		//添加单人指令
 		m_UserHandlers[commandName] = handler;
+		m_userCommandDescriptions[commandName] = description;
 	}
 
 	void Command::groupExcute(long long groupID,

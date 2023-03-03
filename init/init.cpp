@@ -3,6 +3,7 @@
 #include <Json.h>
 #include <asio.hpp>
 
+#include "network.h"
 #include "singleUser.h"
 #include "group.h"
 
@@ -31,14 +32,25 @@ namespace qqbot
 
 		//权限组导入
 		permission.init();
+		std::cout << "权限组导入成功！\n";
+
+		//测试是否能够连接go-cqhttp
+		if (!Network::testConnection())
+		{
+			std::cout << "无法连接至go-cqhttp(" << permission.m_gocq_ip << ':' << permission.m_gocq_port << ")\n";
+			return -1;
+		}
+		std::cout << "成功连接至go-cqhttp(" << permission.m_gocq_ip << ':' << permission.m_gocq_port << ")\n";
 
 		//插件注册
 		pluginRegister.init();
 		pluginRegister.run();
+		std::cout << "全部插件已经成功加载！\n";
 
 		//http服务器开启
+		std::cout << "开启服务器监听(" << permission.m_server_ip << ':' << permission.m_server_port << ")\n";
 		server.Post("/", splitUserNGroup);
-		server.listen("127.0.0.1", 5800);
-		return 0;
+		server.listen(permission.m_server_ip, permission.m_server_port);
+		return -1;
 	}
 }

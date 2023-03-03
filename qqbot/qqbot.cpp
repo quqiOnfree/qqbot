@@ -10,7 +10,12 @@ qqbot::Register		pluginRegister;
 
 int main()
 {
-	qqbot::init(server, permission, pluginRegister);
-
-	return 0;
+	if (qqbot::init(server, permission, pluginRegister))
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
 }

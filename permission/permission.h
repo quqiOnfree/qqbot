@@ -40,6 +40,19 @@ namespace qqbot
 		//获取operator列表
 		const qjson::JObject& getUserOperatorList();
 
+	public:
+		//go-cqhttp的ip
+		std::string		m_gocq_ip;
+
+		//go-cqhttp的port
+		unsigned short	m_gocq_port;
+
+		//server的监听ip
+		std::string		m_server_ip;
+
+		//server的监听port
+		unsigned short	m_server_port;
+
 	protected:
 		//配置文件初始化
 		void makeConfigFile();
