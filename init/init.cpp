@@ -1,5 +1,9 @@
 ﻿#include "init.h"
 
+#include <iostream>
+#include <format>
+#include <ctime>
+
 #include <Json.h>
 
 #include "network.h"
@@ -10,6 +14,14 @@ namespace qqbot
 {
 	void splitUserNGroup(const httplib::Request& req, httplib::Response& res)
 	{
+		{
+			char buffer[50]{ 0 };
+			std::time_t t = time(nullptr);
+			std::tm* tm = std::localtime(&t);
+			std::strftime(buffer, sizeof(buffer), "[%T]", tm);
+			std::cout << std::format("{}{}:{}, -- {} --", buffer, req.remote_addr, req.remote_port, req.method) << '\n';
+		}
+
 		//从go-cqhttp获取到的json消息
 		auto getjson = qjson::JParser::fastParse(req.body);
 
