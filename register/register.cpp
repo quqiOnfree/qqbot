@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "mcrcon.h"
+#include "divination.h"
 
 namespace qqbot
 {
@@ -10,6 +11,9 @@ namespace qqbot
 	{
 		//添加mcrcon插件
 		this->addPlugin(std::make_shared<MCRCON::MCRCONPlugin>());
+
+		//添加占卜插件
+		this->addPlugin(std::make_shared<Divination::DivinationPlugin>());
 	}
 
 	void Register::run()

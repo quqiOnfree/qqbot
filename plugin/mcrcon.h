@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <string>
-#include <asio.hpp>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
@@ -35,7 +34,7 @@ namespace MCRCON
 				"rcon ip port password command -发送指令"
 				);
 
-			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("rcon", true);
+			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("rcon", false);
 		}
 	};
 }

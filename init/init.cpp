@@ -1,7 +1,6 @@
 ﻿#include "init.h"
 
 #include <Json.h>
-#include <asio.hpp>
 
 #include "network.h"
 #include "singleUser.h"
