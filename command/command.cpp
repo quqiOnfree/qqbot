@@ -71,7 +71,8 @@ namespace qqbot
 			}
 
 			},
-			"permission set group/user id permissionName true/false -设置"
+			"permission set group/user id permissionName true/false",
+			"设置"
 			);
 
 		//添加operator的函数
@@ -84,23 +85,38 @@ namespace qqbot
 				}
 				else if (Args.size() == 1)
 				{
-					auto num = qjson::JParser::fastParse(Args[0]);
-					if (num.getType() == qjson::JValueType::JInt)
+					long long userID = 0;
 					{
-						m_permission->setUserOperator(num.getInt(), true);
-						Network::sendGroupMessage(groupID, "设置成功");
+						qjson::JObject jo;
+						try
+						{
+							if (Args[0].substr(0, 10) == "[CQ:at,qq=")
+							{
+								jo = qjson::JParser::fastParse(Args[0].substr(10, Args[0].size() - 10 - 1));
+								userID = jo.getInt();
+							}
+							else
+							{
+								jo = qjson::JParser::fastParse(Args[0]);
+								userID = jo.getInt();
+							}
+						}
+						catch (const std::exception&)
+						{
+							qqbot::Network::sendGroupMessage(groupID, "userid无效");
+							return;
+						}
 					}
-					else
-					{
-						Network::sendGroupMessage(groupID, "参数错误");
-					}
+					m_permission->setUserOperator(userID, true);
+					Network::sendGroupMessage(groupID, "设置成功");
 				}
 				else
 				{
 					Network::sendGroupMessage(groupID, "参数错误");
 				}
 			},
-			"op userid -添加管理员"
+			"op userid",
+			"添加管理员"
 			);
 
 		//删除operator的函数
@@ -113,23 +129,38 @@ namespace qqbot
 				}
 				else if (Args.size() == 1)
 				{
-					auto num = qjson::JParser::fastParse(Args[0]);
-					if (num.getType() == qjson::JValueType::JInt)
+					long long userID = 0;
 					{
-						//m_permission->setUserOperator(num.getInt(), false);
-						Network::sendGroupMessage(groupID, "设置成功");
+						qjson::JObject jo;
+						try
+						{
+							if (Args[0].substr(0, 10) == "[CQ:at,qq=")
+							{
+								jo = qjson::JParser::fastParse(Args[0].substr(10, Args[0].size() - 10 - 1));
+								userID = jo.getInt();
+							}
+							else
+							{
+								jo = qjson::JParser::fastParse(Args[0]);
+								userID = jo.getInt();
+							}
+						}
+						catch (const std::exception&)
+						{
+							qqbot::Network::sendGroupMessage(groupID, "userid无效");
+							return;
+						}
 					}
-					else
-					{
-						Network::sendGroupMessage(groupID, "参数错误");
-					}
+					m_permission->setUserOperator(userID, false);
+					Network::sendGroupMessage(groupID, "设置成功");
 				}
 				else
 				{
 					Network::sendGroupMessage(groupID, "参数错误");
 				}
 			},
-			"deop userid -删除管理员"
+			"deop userid",
+			"删除管理员"
 			);
 
 		//添加help函数
@@ -172,7 +203,7 @@ namespace qqbot
 
 						if (canUseCommand)
 						{
-							helpMsg += m_groupCommandDescriptions[i->first] + "\n";
+							helpMsg += std::format("[!{}] {}\n", i->first, m_groupCommandDescriptions[i->first]);
 						}
 					}
 
@@ -182,7 +213,7 @@ namespace qqbot
 				{
 					if (m_permission->hasUserOperator(senderID))
 					{
-						Network::sendGroupMessage(groupID, m_groupCommandDescriptions[Args[0]]);
+						Network::sendGroupMessage(groupID, std::format("[!{}]\n命令格式：!{}\n命令定义：{}", Args[0], m_groupCommandFormats[Args[0]], m_groupCommandDescriptions[Args[0]]));
 						return;
 					}
 					else if (m_permission->hasSingleGroupDefaultPermission(groupID, Args[0]))
@@ -212,8 +243,9 @@ namespace qqbot
 						}
 					}
 				}
-			}
-			, "help -帮助");
+			},
+			"help command(可不填)",
+			"帮助");
 	}
 
 	Command::Command(Command&& command) noexcept
@@ -234,23 +266,24 @@ namespace qqbot
 		return *this;
 	}
 
-	void Command::addCommand(const std::string& commandName, Command::GroupHandler handler, const std::string& description)
+	void Command::addCommand(const std::string& commandName, Command::GroupHandler handler, const std::string& commandFormat, const std::string& description)
 	{
 		if (m_GroupHandlers.find(commandName) != m_GroupHandlers.end())
 		{
-			throw THROW_ERROR("已经存在此指令！");
+			throw THROW_ERROR(std::format("已经存在此指令：{}", commandName));
 		}
 
 		//添加群指令
 		m_GroupHandlers[commandName] = handler;
 		m_groupCommandDescriptions[commandName] = description;
+		m_groupCommandFormats[commandName] = commandFormat;
 	}
 
-	void Command::addCommand(const std::string& commandName, Command::UserHandler handler, const std::string& description)
+	void Command::addCommand(const std::string& commandName, Command::UserHandler handler, const std::string& commandFormat, const std::string& description)
 	{
 		if (m_UserHandlers.find(commandName) != m_UserHandlers.end())
 		{
-			throw THROW_ERROR("已经存在此指令！");
+			throw THROW_ERROR(std::format("已经存在此指令：{}", commandName));
 		}
 
 		//添加单人指令

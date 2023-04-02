@@ -33,11 +33,13 @@ namespace qqbot
 		//添加群命令
 		void addCommand(const std::string& commandName,
 			GroupHandler handler,
+			const std::string& commandFormat,
 			const std::string& description);
 
 		//添加私聊命令
 		void addCommand(const std::string& commandName,
 			UserHandler handler,
+			const std::string& commandFormat,
 			const std::string& description);
 
 		//群消息处理
@@ -54,6 +56,7 @@ namespace qqbot
 	private:
 		std::unordered_map<std::string, GroupHandler>	m_GroupHandlers;
 		std::unordered_map<std::string, std::string>	m_groupCommandDescriptions;
+		std::unordered_map<std::string, std::string>	m_groupCommandFormats;
 		std::unordered_map<std::string, UserHandler>	m_UserHandlers;
 		std::unordered_map<std::string, std::string>	m_userCommandDescriptions;
 		qqbot::Permission*								m_permission;

@@ -6,6 +6,7 @@
 #include "mcrcon.h"
 #include "divination.h"
 #include "mil.h"
+#include "groupOperator.h"
 
 namespace qqbot
 {
@@ -19,6 +20,9 @@ namespace qqbot
 
 		//添加人间地狱密位换算插件
 		this->addPlugin(std::make_shared<MIL::MILPlugin>());
+
+		//添加群组管理插件
+		this->addPlugin(std::make_shared<GroupOperator::GroupOperatorPlugin>());
 	}
 
 	void Register::run()

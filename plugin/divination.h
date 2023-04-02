@@ -61,7 +61,8 @@ Args[0], static_cast<long double>(m_mt() % 100000) / 1000));
 outString, static_cast<long double>(m_mt() % 100000) / 1000));
 					}
 				},
-				"div 事件 -占卜事件"
+				"div event",
+				"占卜事件"
 					);
 
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("div", true);

@@ -75,7 +75,8 @@ namespace MIL
 						qqbot::Network::sendGroupMessage(groupID, "参数错误");
 					}
 				},
-				"mil [美军(a)/苏军(c)] 数值 -人间地狱大炮测算"
+				"mil [美军(a)/苏军(c)] 数值",
+				"人间地狱大炮测算"
 					);
 
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("mil", true);

@@ -25,6 +25,9 @@ namespace qqbot
 		//从go-cqhttp获取到的json消息
 		auto getjson = qjson::JParser::fastParse(req.body);
 
+		//debug
+		//std::cout << qjson::JWriter::fastFormatWrite(getjson) << '\n';
+
 		if (getjson["message_type"] == "private")
 		{
 			//当消息类型是私聊类型
@@ -54,14 +57,22 @@ namespace qqbot
 		std::cout << "成功连接至go-cqhttp(" << permission.m_gocq_ip << ':' << permission.m_gocq_port << ")\n";
 
 		//插件注册
-		pluginRegister.init();
-		pluginRegister.run();
+		try
+		{
+			pluginRegister.init();
+			pluginRegister.run();
+		}
+		catch (const std::exception& e)
+		{
+			std::cout << "发生错误：" << e.what();
+			return -1;
+		}
 		std::cout << "全部插件已经成功加载！\n";
 
 		//http服务器开启
 		std::cout << "开启服务器监听(" << permission.m_server_ip << ':' << permission.m_server_port << ")\n";
 		server.Post("/", splitUserNGroup);
 		server.listen(permission.m_server_ip, permission.m_server_port);
-		return -1;
+		return 0;
 	}
 }

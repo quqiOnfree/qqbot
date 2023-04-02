@@ -31,7 +31,8 @@ namespace MCRCON
 						qqbot::Network::sendGroupMessage(groupID, "rcon ip port password command -发送指令");
 					}
 				},
-				"rcon ip port password command -发送指令"
+				"rcon ip port password command",
+				"发送指令"
 				);
 
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("rcon", false);

@@ -42,7 +42,10 @@ namespace qqbot
 			{
 				if (data[i] == ' ')
 				{
-					dataList.push_back(data.substr(begin + 1, i - begin - 1));
+					if ((i - begin - 1) > 0)
+					{
+						dataList.push_back(data.substr(begin + 1, i - begin - 1));
+					}
 					begin = i;
 				}
 			}
