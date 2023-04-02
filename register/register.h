@@ -22,6 +22,8 @@ namespace qqbot
 		void run();
 		//添加插件
 		void addPlugin(const std::shared_ptr<CppPlugin>& plugin);
+		//插件列表
+		const std::unordered_map<std::string, std::shared_ptr<CppPlugin>>& getPlugins() const;
 
 	private:
 		//存储插件的哈希表

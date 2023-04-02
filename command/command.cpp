@@ -4,6 +4,9 @@
 
 #include "network.h"
 #include "definition.h"
+#include "register.h"
+
+extern qqbot::Register pluginRegister;
 
 namespace qqbot
 {
@@ -162,6 +165,37 @@ namespace qqbot
 			"deop userid",
 			"删除管理员"
 			);
+
+		this->addCommand("plugin",
+			[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
+			{
+				if (Args.empty())
+				{
+					qqbot::Network::sendGroupMessage(groupID, "plugin list -插件列表");
+				}
+				else if (Args.size() == 1)
+				{
+					if (Args[0] == "list")
+					{
+						std::string outString;
+
+						const std::unordered_map<std::string, std::shared_ptr<CppPlugin>>& plugins = pluginRegister.getPlugins();
+						for (auto i = plugins.begin(); i != plugins.end(); i++)
+						{
+							outString += std::format("-----------------------\n[{}]\nAuthor: {}\nVersion: {}\n", i->first, i->second->pluginInfo.author, i->second->pluginInfo.version);
+						}
+
+						qqbot::Network::sendGroupMessage(groupID, outString);
+					}
+					else
+					{
+						qqbot::Network::sendGroupMessage(groupID, "参数错误");
+					}
+				}
+			},
+			"plugin list",
+				"插件列表"
+				);
 
 		//添加help函数
 		this->addCommand("help",

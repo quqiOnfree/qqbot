@@ -1,8 +1,8 @@
 ﻿#include "pluginLibrary.h"
 
 extern qqbot::Permission	permission;
-extern qqbot::Command		command;
 extern qqbot::Register		pluginRegister;
+extern qqbot::Command		command;
 
 namespace qqbot::ServerInfo
 {

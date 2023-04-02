@@ -5,8 +5,8 @@
 
 httplib::Server		server;
 qqbot::Permission	permission;
-qqbot::Command		command(&permission);
 qqbot::Register		pluginRegister;
+qqbot::Command		command(&permission);
 
 int main()
 {

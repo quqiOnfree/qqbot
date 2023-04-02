@@ -40,4 +40,9 @@ namespace qqbot
 		m_plugins[plugin->pluginInfo.name] = plugin;
 		plugin->onLoad();
 	}
+
+	const std::unordered_map<std::string, std::shared_ptr<CppPlugin>>& Register::getPlugins() const
+	{
+		return m_plugins;
+	}
 }
