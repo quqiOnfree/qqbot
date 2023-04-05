@@ -122,9 +122,15 @@ namespace GroupOperator
                 "kick userid true/false",       //命令格式
                 "踢出群成员"                    //命令作用解释
                 );
+
+            //设置权限
+            qqbot::ServerInfo::getPermission().setGroupDefaultPermission("kick", false);
+            //true是普通用户可以访问，false是管理员可以访问
+            //这个可以在配置文件里面进行编辑
         }
     };
 }
+
 
 ```
 #### 加载插件  
