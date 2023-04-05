@@ -4,12 +4,17 @@
 - 语言：C++
 
 ## 依赖
+### 前置依赖
 - [JsonParser](https://github.com/quqiOnfree/JsonParser)
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 - [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
+- [asio](https://github.com/chriskohlhoff/asio)
+### 导入
+- 在[CMakeLists.txt](./CMakeLists.txt)里面进行编辑然后再编译
 
 ## 功能
 ### QQ机器人插件系统
+#### 创建插件
 - 此机器人只有一个框架，用于插件扩展，所有指令（除了基本的help等基础指令）都是通过插件加入  
 - 插件类  
 ```cpp
@@ -119,6 +124,27 @@ namespace GroupOperator
                 );
         }
     };
+}
+
+```
+#### 加载插件  
+需要在[register.cpp](./register/register.cpp)加入一些代码
+```cpp
+//导入插件
+#include "pluginName.h" //插件名
+
+namespace qqbot
+{
+	//修改此函数
+	void Register::init()
+	{
+		//添加插件（以GroupOperator为例）
+		//this->addPlugin(std::make_shared<插件命名空间::插件类>());
+		this->addPlugin(std::make_shared<GroupOperator::GroupOperatorPlugin>());
+	}
+	
+	//省略下面代码
+	//...
 }
 
 ```
