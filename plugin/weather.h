@@ -227,25 +227,52 @@ R"({}省{}的天气：
 						else if (Args[1] == "b")
 						{
 							//请求API
-							httplib::SSLClient client("https://restapi.amap.com", 443);
+							httplib::Client client("https://restapi.amap.com");
 							httplib::Params params = {
 								{ "key",m_apiKey },
 								{ "city",code },
-								{ "extensions","base" },
+								{ "extensions","all" },
 								{ "output","JSON" }
 							};
-							httplib::Headers headers;
-							httplib::Result result = client.Get("/v3/weather/weatherInfo", params, headers,
-								[&](const char* data, size_t data_length) {
-									//qjson::JObject jo = qjson::JParser::fastParse(std::string(data, data_length));
-									//qqbot::Network::sendGroupMessage(groupID, std::string(data, data_length));
-									return true;
-								});
 
-							if (result.error() != httplib::Error::Success)
+							httplib::Result result = client.Get("/v3/weather/weatherInfo", params, httplib::Headers());
+
+							if (result.error() != httplib::Error::Success && result.error() != httplib::Error::Connection)
 							{
-								qqbot::Network::sendGroupMessage(groupID, "请求API出现问题，请稍后再试");
+								qqbot::Network::sendGroupMessage(groupID, std::format("请求API出现问题，请稍后再试"));
 								return;
+							}
+							else if (!result)
+							{
+								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法连接API"));
+								return;
+							}
+							else if (result->status != 200)
+							{
+								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，API错误码：{}", result->status));
+								return;
+							}
+
+							qjson::JObject jo = qjson::JParser::fastParse(result->body);
+
+							if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
+							{
+								std::string outStr = std::format(
+									"{}省{}的天气：\n",
+									jo["forecasts"][0]["province"].getString(),
+									jo["forecasts"][0]["city"].getString()
+								);
+								qjson::list_t& list = jo["forecasts"][0]["casts"].getList();
+
+								//未开发完成
+
+								qqbot::Network::sendGroupMessage(groupID, "此功能正在开发中...");
+
+								//qqbot::Network::sendGroupMessage(groupID, );
+							}
+							else
+							{
+								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
 							}
 						}
 						else
