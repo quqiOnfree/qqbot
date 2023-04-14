@@ -73,8 +73,25 @@ if (MSVC)
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /utf-8")
 endif(MSVC)
 
+#openssl支持
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+    set(HTTPLIB_IS_USING_OPENSSL TRUE)
+endif()
+
+link_directories("${CMAKE_SOURCE_DIR}/lib")
+
 # 将源代码添加到此项目的可执行文件。
 add_executable (qqbot "${INCLUDEFILE}" "${SOURCEFILE}")
+
+#openssl
+target_link_libraries(${PROJECT_NAME} PUBLIC
+        $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::SSL>
+        $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:OpenSSL::Crypto>)
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+        $<$<BOOL:${HTTPLIB_IS_USING_OPENSSL}>:CPPHTTPLIB_OPENSSL_SUPPORT>
+        )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET qqbot PROPERTY CXX_STANDARD 20)

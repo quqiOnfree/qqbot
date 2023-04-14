@@ -1,4 +1,4 @@
-# QQ机器人
+﻿# QQ机器人
 ## 介绍
 - 这个QQ机器人拥有插件系统，可以轻松扩展
 - 语言：C++
@@ -9,6 +9,7 @@
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 - [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
 - [asio](https://github.com/chriskohlhoff/asio)
+- [openssl](https://github.com/openssl/openssl)
 ### 导入
 - 在[CMakeLists.txt](./CMakeLists.txt)里面进行编辑然后再编译
 

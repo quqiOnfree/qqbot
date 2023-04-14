@@ -7,6 +7,7 @@
 #include "divination.h"
 #include "mil.h"
 #include "groupOperator.h"
+#include "weather.h"
 
 namespace qqbot
 {
@@ -23,6 +24,9 @@ namespace qqbot
 
 		//添加群组管理插件
 		this->addPlugin(std::make_shared<GroupOperator::GroupOperatorPlugin>());
+
+		//添加天气插件
+		this->addPlugin(std::make_shared<Weather::WeatherPlugin>());
 	}
 
 	void Register::run()
