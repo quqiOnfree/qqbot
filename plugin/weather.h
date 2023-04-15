@@ -204,7 +204,7 @@ namespace Weather
 								qqbot::Network::sendGroupMessage(groupID, std::format(
 R"({}省{}的天气：
 天气状况：{}
-气温：{}
+气温：{}℃
 风向：{}风{}级
 空气湿度：{}%
 数据发布时间：{})", 
@@ -258,15 +258,33 @@ R"({}省{}的天气：
 							if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
 							{
 								std::string outStr = std::format(
-									"{}省{}的天气：\n",
+									"{}省{}的预报天气：\n",
 									jo["forecasts"][0]["province"].getString(),
 									jo["forecasts"][0]["city"].getString()
 								);
 								qjson::list_t& list = jo["forecasts"][0]["casts"].getList();
 
-								//未开发完成
+								for (auto i = list.begin(); i != list.end(); i++)
+								{
+									outStr += std::format(R"(--------------------
+日期：{}
+天气状况：{}-{}
+气温：{}℃-{}℃
+风向：{}风{}级-{}风{}级
+)",
+										(*i)["date"].getString(),
+										(*i)["dayweather"].getString(),
+										(*i)["nightweather"].getString(),
+										(*i)["daytemp"].getString(),
+										(*i)["nighttemp"].getString(),
+										(*i)["daywind"].getString(),
+										(*i)["daypower"].getString(),
+										(*i)["nightwind"].getString(),
+										(*i)["nightpower"].getString()
+									);
+								}
 
-								qqbot::Network::sendGroupMessage(groupID, "此功能正在开发中...");
+								qqbot::Network::sendGroupMessage(groupID, outStr);
 
 								//qqbot::Network::sendGroupMessage(groupID, );
 							}
