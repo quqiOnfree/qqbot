@@ -323,6 +323,7 @@ namespace qqbot
 		//添加单人指令
 		m_UserHandlers[commandName] = handler;
 		m_userCommandDescriptions[commandName] = description;
+		m_userCommandFormats[commandName] = commandFormat;
 	}
 
 	void Command::groupExcute(long long groupID,
@@ -378,12 +379,8 @@ namespace qqbot
 		const std::string& command,
 		std::vector<std::string> args)
 	{
-		//此函数未完善!!!
-		//此函数未完善!!!
-		//此函数未完善!!!
-
 		//查找是否有这个指令
-		if (m_GroupHandlers.find(command) == m_GroupHandlers.end())
+		if (m_UserHandlers.find(command) == m_UserHandlers.end())
 		{
 			throw std::exception("could not find this command");
 		}
@@ -393,6 +390,19 @@ namespace qqbot
 		{
 			m_UserHandlers[command](senderID, command, args);
 			return;
+		}
+		if (m_permission->hasGroupDefaultPermission(command))
+		{
+			//查找默认群权限设置
+			if (m_permission->getGroupDefaultPermission(command))
+			{
+				m_UserHandlers[command](senderID, command, args);
+				return;
+			}
+			else
+			{
+				throw std::exception("you don't have permission");
+			}
 		}
 		else
 		{

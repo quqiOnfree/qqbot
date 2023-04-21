@@ -59,6 +59,7 @@ namespace qqbot
 		std::unordered_map<std::string, std::string>	m_groupCommandFormats;
 		std::unordered_map<std::string, UserHandler>	m_UserHandlers;
 		std::unordered_map<std::string, std::string>	m_userCommandDescriptions;
+		std::unordered_map<std::string, std::string>	m_userCommandFormats;
 		qqbot::Permission*								m_permission;
 	};
 }

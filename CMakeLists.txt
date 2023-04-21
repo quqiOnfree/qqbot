@@ -48,6 +48,9 @@ file(
 
 	"${CMAKE_SOURCE_DIR}/singleUser/*.h"
 	"${CMAKE_SOURCE_DIR}/singleUser/*.cpp"
+
+	"${CMAKE_SOURCE_DIR}/timer/*.h"
+	"${CMAKE_SOURCE_DIR}/timer/*.cpp"
 )
 
 include_directories(
@@ -65,6 +68,7 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/singleUser/"
 	"${CMAKE_SOURCE_DIR}/plugin/"
 	"${CMAKE_SOURCE_DIR}/pluginLibrary/"
+	"${CMAKE_SOURCE_DIR}/timer/"
 	)
 
 if (MSVC)
