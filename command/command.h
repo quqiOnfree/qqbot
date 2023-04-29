@@ -53,6 +53,9 @@ namespace qqbot
 			const std::string& command,
 			std::vector<std::string> args);
 
+		//命令分割
+		static void splitCommand(const std::string& command, std::string& commandHead, std::vector<std::string>& args);
+
 	private:
 		std::unordered_map<std::string, GroupHandler>	m_GroupHandlers;
 		std::unordered_map<std::string, std::string>	m_groupCommandDescriptions;

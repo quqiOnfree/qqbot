@@ -2,9 +2,13 @@
 
 #include <format>
 
+#include <Json.h>
+
 #include "network.h"
 #include "definition.h"
 #include "register.h"
+#include "timer.h"
+#include "definition.h"
 
 extern qqbot::Register pluginRegister;
 
@@ -196,6 +200,58 @@ namespace qqbot
 			"plugin list",
 				"插件列表"
 				);
+
+		//定时器
+		this->addCommand("timer",
+			[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
+			{
+				static qqbot::Timers timers;
+
+				if (Args.empty())
+				{
+					Network::sendGroupMessage(groupID, "timer interval(millisecond) command -定时器");
+				}
+				else if (Args.size() <= 1)
+				{
+					Network::sendGroupMessage(groupID, "参数过少");
+				}
+				else
+				{
+					long long interval = 0;
+					{
+						auto jo = qjson::JParser::fastParse(Args[0]);
+						if (jo.getType() != qjson::JValueType::JInt)
+						{
+							Network::sendGroupMessage(groupID, "interval应该是数字类型");
+							return;
+						}
+						interval = jo.getInt();
+					}
+
+					//定时器指令
+					std::string taskName;
+
+					for (auto i = Args.begin() + 1; i != Args.end(); i++)
+					{
+						if (i + 1 != Args.end())
+							taskName += *i + ' ';
+						else
+							taskName += *i;
+					}
+
+					std::string commandName;
+					std::vector<std::string> commandArgs;
+
+					Command::splitCommand(taskName, commandName, commandArgs);
+
+					timers.addTask(taskName, interval, &Command::groupExcute, this, groupID, senderID, commandName, commandArgs);
+
+					Network::sendGroupMessage(groupID, std::format("添加\"{}\"指令到定时器中成功，间隔为{}毫秒", taskName, interval));
+				}
+			},
+			"timer interval(millisecond) command",
+			"定时器"
+			);
 
 		//添加help函数
 		this->addCommand("help",
@@ -407,6 +463,63 @@ namespace qqbot
 		else
 		{
 			throw std::exception("you don't have permission");
+		}
+	}
+
+	void Command::splitCommand(const std::string& command, std::string& commandHead, std::vector<std::string>& args)
+	{
+		std::string message = command;
+
+		if (message.size() <= 1ll)
+			throw THROW_ERROR("命令过小");
+
+		//string按空格分割函数
+		auto split = [](const std::string& data) {
+			std::vector<std::string> dataList;
+
+			long long begin = -1;
+			long long i = 0;
+
+			for (; static_cast<size_t>(i) < data.size(); i++)
+			{
+				if (data[i] == ' ')
+				{
+					if ((i - begin - 1) > 0)
+					{
+						dataList.push_back(data.substr(begin + 1, i - begin - 1));
+					}
+					begin = i;
+				}
+			}
+			dataList.push_back(data.substr(begin + 1, i - begin - 1));
+
+			return dataList;
+		};
+
+		//判断消息第一个字符是 '!'
+		if (message.size() > 1 && message[0] == '!')
+		{
+			//分割后的参数
+			std::vector<std::string> parseString = split(message.substr(1));
+
+			//如果args为0就报错
+			if (parseString.empty())
+			{
+				throw THROW_ERROR("输入非法");
+			}
+
+			//指令名称
+			std::string commandName = parseString[0];
+			parseString.erase(parseString.begin());
+
+			//成功返回
+			commandHead = std::move(commandName);
+			args = std::move(parseString);
+			return;
+		}
+		else if (!message.empty() && message[0] == '!')
+		{
+			throw THROW_ERROR("输入非法");
 		}
 	}
 }
