@@ -9,7 +9,7 @@
 
 namespace qqbot
 {
-	class Command
+	class Command final
 	{
 	public:
 		//群消息处理函数模板

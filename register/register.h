@@ -7,7 +7,7 @@
 
 namespace qqbot
 {
-	class Register
+	class Register final
 	{
 	public:
 		//禁止复制，只能移动
