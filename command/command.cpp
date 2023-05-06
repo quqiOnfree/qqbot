@@ -246,7 +246,7 @@ namespace qqbot
 
 					Command::splitCommand(taskName, commandName, commandArgs);
 
-					timers.addTask(taskName, static_cast<int>(interval), &Command::groupExcute, this, groupID, senderID, commandName, commandArgs);
+					timers.addTask(taskName, interval, &Command::groupExcute, this, groupID, senderID, commandName, commandArgs);
 
 					Network::sendGroupMessage(groupID, std::format("添加\"{}\"指令到定时器中成功，间隔为{}毫秒", taskName, interval));
 				}

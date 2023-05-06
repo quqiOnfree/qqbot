@@ -90,7 +90,7 @@ namespace qqbot
 		std::atomic<bool> tryToExpire;//timer is in stop process.
 	};
 
-	class Timers final
+	class Timers
 	{
 	public:
 		Timers() = default;

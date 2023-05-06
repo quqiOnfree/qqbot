@@ -8,7 +8,7 @@
 
 namespace qqbot
 {
-	class Permission final
+	class Permission
 	{
 	public:
 		Permission();

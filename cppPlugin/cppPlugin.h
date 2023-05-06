@@ -25,7 +25,7 @@ namespace qqbot
 		//禁止复制，只能移动
 		CppPlugin() = default;
 		CppPlugin(const CppPlugin&) = delete;
-		virtual ~CppPlugin() = default;
+		~CppPlugin() = default;
 
 		CppPlugin& operator =(const CppPlugin&) = delete;
 
