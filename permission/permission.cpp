@@ -49,7 +49,7 @@ namespace qqbot
 			m_server_ip = m_json["sever"]["ip"].getString();
 			m_server_port = static_cast<unsigned short>(m_json["server"]["port"].getInt());
 		}
-		catch (const std::exception&)
+		catch (const std::logic_error&)
 		{
 			this->makeConfigFile();
 			exit(-1);

@@ -38,7 +38,7 @@ namespace Weather
 			{
 				if (data.empty())
 				{
-					throw std::exception("data is empty");
+					throw std::logic_error("data is empty");
 				}
 
 				std::set<size_t> locSet;
@@ -113,7 +113,7 @@ namespace Weather
 					}
 					else
 					{
-						throw std::exception("找不到此地点");
+						throw std::logic_error("找不到此地点");
 					}
 				}
 			}

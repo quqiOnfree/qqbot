@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "definition.h"
+
 //添加插件
 #include "mcrcon.h"
 #include "divination.h"
@@ -31,16 +33,20 @@ namespace qqbot
 
 	void Register::run()
 	{
-		for (auto i = m_plugins.begin(); i != m_plugins.end(); i++)
+		for (auto& [name, plugin] : m_plugins)
 		{
-			std::cout << "Plugin " << i->first << " v" << i->second->pluginInfo.version << " onEnabled\n";
-			i->second->onEnable();
+			std::cout << std::format("Plugin: {} v{} onEnabled", name, plugin->pluginInfo.version);
+			plugin->onEnable();
 		}
 	}
 
 	void Register::addPlugin(const std::shared_ptr<CppPlugin>& plugin)
 	{
-		std::cout << "Plugin " << plugin->pluginInfo.name << " v" << plugin->pluginInfo.version << " onLoaded\n";
+		std::cout << std::format("Plugin: {} v{} onLoaded", plugin->pluginInfo.name, plugin->pluginInfo.version);
+		if (m_plugins.find(plugin->pluginInfo.name) != m_plugins.end())
+		{
+			throw THROW_ERROR("plugin has the same name!");
+		}
 		m_plugins[plugin->pluginInfo.name] = plugin;
 		plugin->onLoad();
 	}
