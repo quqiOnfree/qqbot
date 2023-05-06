@@ -108,10 +108,9 @@ namespace qqbot
 								userID = jo.getInt();
 							}
 						}
-						catch (const std::logic_error&)
+						catch (const std::exception&)
 						{
 							qqbot::Network::sendGroupMessage(groupID, "userid无效");
-							std::cout << Error::outErrorMessage("userid无效") << '\n';
 							return;
 						}
 					}
@@ -153,10 +152,9 @@ namespace qqbot
 								userID = jo.getInt();
 							}
 						}
-						catch (const std::logic_error&)
+						catch (const std::exception&)
 						{
 							qqbot::Network::sendGroupMessage(groupID, "userid无效");
-							std::cout << Error::outErrorMessage("userid无效") << '\n';
 							return;
 						}
 					}
@@ -263,16 +261,16 @@ namespace qqbot
 				{
 					std::string helpMsg;
 
-					for (auto& [permissionName, groupHandler] : m_GroupHandlers)
+					for (auto i = m_GroupHandlers.begin(); i != m_GroupHandlers.end(); i++)
 					{
 						bool canUseCommand = false;
 						if (m_permission->hasUserOperator(senderID))
 						{
 							canUseCommand = true;
 						}
-						else if (m_permission->hasSingleGroupDefaultPermission(groupID, permissionName))
+						else if (m_permission->hasSingleGroupDefaultPermission(groupID, i->first))
 						{
-							if (m_permission->getSingleGroupDefaultPermission(groupID, permissionName))
+							if (m_permission->getSingleGroupDefaultPermission(groupID, i->first))
 							{
 								canUseCommand = true;
 							}
@@ -281,9 +279,9 @@ namespace qqbot
 								continue;
 							}
 						}
-						else if (m_permission->hasGroupDefaultPermission(permissionName))
+						else if (m_permission->hasGroupDefaultPermission(i->first))
 						{
-							if (m_permission->getGroupDefaultPermission(permissionName))
+							if (m_permission->getGroupDefaultPermission(i->first))
 							{
 								canUseCommand = true;
 							}
@@ -295,7 +293,7 @@ namespace qqbot
 
 						if (canUseCommand)
 						{
-							helpMsg += std::format("[!{}] {}\n", permissionName, m_groupCommandDescriptions[permissionName]);
+							helpMsg += std::format("[!{}] {}\n", i->first, m_groupCommandDescriptions[i->first]);
 						}
 					}
 
@@ -392,7 +390,7 @@ namespace qqbot
 		//查找指令
 		if (m_GroupHandlers.find(command) == m_GroupHandlers.end())
 		{
-			throw std::logic_error("could not find this command");
+			throw std::exception("could not find this command");
 		}
 
 		//是否是operator
@@ -411,7 +409,7 @@ namespace qqbot
 			}
 			else
 			{
-				throw std::logic_error("you don't have permission");
+				throw std::exception("you don't have permission");
 			}
 		}
 		else if (m_permission->hasGroupDefaultPermission(command))
@@ -424,12 +422,12 @@ namespace qqbot
 			}
 			else
 			{
-				throw std::logic_error("you don't have permission");
+				throw std::exception("you don't have permission");
 			}
 		}
 		else
 		{
-			throw std::logic_error("you don't have permission");
+			throw std::exception("you don't have permission");
 		}
 	}
 
@@ -440,7 +438,7 @@ namespace qqbot
 		//查找是否有这个指令
 		if (m_UserHandlers.find(command) == m_UserHandlers.end())
 		{
-			throw std::logic_error("could not find this command");
+			throw std::exception("could not find this command");
 		}
 
 		//是否是operator
@@ -459,12 +457,12 @@ namespace qqbot
 			}
 			else
 			{
-				throw std::logic_error("you don't have permission");
+				throw std::exception("you don't have permission");
 			}
 		}
 		else
 		{
-			throw std::logic_error("you don't have permission");
+			throw std::exception("you don't have permission");
 		}
 	}
 

@@ -98,7 +98,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
         )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET qqbot PROPERTY CXX_STANDARD 23)
+  set_property(TARGET qqbot PROPERTY CXX_STANDARD 20)
 endif()
 
 # TODO: 如有需要，请添加测试并安装目标。

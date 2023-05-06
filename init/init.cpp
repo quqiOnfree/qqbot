@@ -62,7 +62,7 @@ namespace qqbot
 			pluginRegister.init();
 			pluginRegister.run();
 		}
-		catch (const std::logic_error& e)
+		catch (const std::exception& e)
 		{
 			std::cout << "发生错误：" << e.what();
 			return -1;

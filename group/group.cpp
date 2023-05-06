@@ -6,7 +6,6 @@
 #include "permission.h"
 #include "network.h"
 #include "command.h"
-#include "definition.h"
 
 extern qqbot::Permission	permission;
 extern qqbot::Command		command;
@@ -45,10 +44,9 @@ namespace qqbot
 			//群消息处理
 			command.groupExcute(groupID, senderUID, commandName, std::move(parseString));
 		}
-		catch (const std::logic_error& e)
+		catch (const std::exception& e)
 		{
 			Network::sendGroupMessage(groupID, e.what());
-			std::cout << Error::outErrorMessage(e) << '\n';
 		}
 
 		return {};

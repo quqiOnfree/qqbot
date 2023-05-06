@@ -50,7 +50,7 @@ namespace GroupOperator
 									userID = jo.getInt();
 								}
 							}
-							catch (const std::logic_error&)
+							catch (const std::exception&)
 							{
 								qqbot::Network::sendGroupMessage(groupID, "userid无效");
 								return;
@@ -78,7 +78,7 @@ namespace GroupOperator
 									userID = jo.getInt();
 								}
 							}
-							catch (const std::logic_error&)
+							catch (const std::exception&)
 							{
 								qqbot::Network::sendGroupMessage(groupID, "userid无效");
 								return;
@@ -93,7 +93,7 @@ namespace GroupOperator
 								jo = qjson::JParser::fastParse(Args[1]);
 								refuse = jo.getBool();
 							}
-							catch (const std::logic_error&)
+							catch (const std::exception&)
 							{
 								qqbot::Network::sendGroupMessage(groupID, "bool值无效");
 								return;
@@ -145,7 +145,7 @@ namespace GroupOperator
 									userID = jo.getInt();
 								}
 							}
-							catch (const std::logic_error&)
+							catch (const std::exception&)
 							{
 								qqbot::Network::sendGroupMessage(groupID, "userid无效");
 								return;
@@ -160,7 +160,7 @@ namespace GroupOperator
 								jo = qjson::JParser::fastParse(Args[1]);
 								duration = jo.getInt();
 							}
-							catch (const std::logic_error&)
+							catch (const std::exception&)
 							{
 								qqbot::Network::sendGroupMessage(groupID, "持续时间无效");
 								return;
