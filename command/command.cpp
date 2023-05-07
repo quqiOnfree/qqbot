@@ -1,7 +1,6 @@
 ﻿#include "command.h"
 
 #include <format>
-
 #include <Json.h>
 
 #include "network.h"
@@ -209,60 +208,147 @@ namespace qqbot
 
 				if (Args.empty())
 				{
-					Network::sendGroupMessage(groupID, "timer interval(millisecond) command -定时器");
+					Network::sendGroupMessage(groupID,
+						"timer interval(second) command\n"
+						"timer list\n"
+						"timer remove position(int)\n"
+						"-定时器\n"
+					);
 				}
-				else if (Args.size() <= 1)
+				else if (Args.size() == 1)
 				{
-					Network::sendGroupMessage(groupID, "参数过少");
+					if (Args[0] == "list")
+					{
+						const auto& list = timers.getTaskList();
+
+						std::string outString("timer任务列表\n");
+
+						long long position = 0;
+						for (const auto& taskName : list)
+						{
+							outString += std::format("{}: {}\n", position++, taskName);
+						}
+
+						Network::sendGroupMessage(groupID, outString);
+						return;
+					}
+					else
+					{
+						Network::sendGroupMessage(groupID, "没有此指令");
+						return;
+					}
 				}
 				else
 				{
-					long long interval = 0;
-					{
-						auto jo = qjson::JParser::fastParse(Args[0]);
-						if (jo.getType() != qjson::JValueType::JInt)
+					auto addTask = [=]() -> int{
 						{
-							Network::sendGroupMessage(groupID, "interval应该是数字类型");
-							return;
+							long long interval = 0;
+							try
+							{
+								auto jo = qjson::JParser::fastParse(Args[0]);
+								if (jo.getType() != qjson::JValueType::JInt)
+								{
+									return 1;
+								}
+								interval = jo.getInt();
+							}
+							catch (const std::exception&)
+							{
+								return 1;
+							}
+
+							//定时器指令
+							std::string taskName;
+
+							for (auto i = Args.begin() + 1; i != Args.end(); i++)
+							{
+								if (i + 1 != Args.end())
+									taskName += *i + ' ';
+								else
+									taskName += *i;
+							}
+
+							std::string commandName;
+							std::vector<std::string> commandArgs;
+
+							try
+							{
+								//检测command是否合法
+								Command::splitCommand(taskName, commandName, commandArgs);
+
+								//测试是否能成功
+								this->groupExcute(groupID, senderID, commandName, commandArgs);
+							}
+							catch (const std::exception& e)
+							{
+								Network::sendGroupMessage(groupID, std::format("指令\"{}\"错误：{}", taskName, e.what()));
+								std::cout << ERROR_WITH_STACKTRACE(std::format("指令\"{}\"错误：{}", taskName, e.what())) << '\n';
+								return 2;
+							}
+
+							if (!timers.addTask(taskName,
+								interval,
+								&Command::groupExcute,
+								this,
+								groupID,
+								senderID,
+								commandName,
+								commandArgs)
+								)
+							{
+								Network::sendGroupMessage(groupID, "已经有此任务在运行");
+								std::cout << ERROR_WITH_STACKTRACE("已经有此任务在运行") << '\n';
+								return 2;
+							}
+
+							Network::sendGroupMessage(groupID, std::format("添加\"{}\"指令到定时器中成功，间隔为{}秒", taskName, interval));
+							return 0;
 						}
-						interval = jo.getInt();
-					}
+					};
 
-					//定时器指令
-					std::string taskName;
-
-					for (auto i = Args.begin() + 1; i != Args.end(); i++)
+					int isAddTask = addTask();
+					if (isAddTask != 1)
 					{
-						if (i + 1 != Args.end())
-							taskName += *i + ' ';
-						else
-							taskName += *i;
-					}
-
-					std::string commandName;
-					std::vector<std::string> commandArgs;
-
-					try
-					{
-						//检测command是否合法
-						Command::splitCommand(taskName, commandName, commandArgs);
-
-						//测试是否能成功
-						this->groupExcute(groupID, senderID, commandName, commandArgs);
-					}
-					catch (const std::exception& e)
-					{
-						Network::sendGroupMessage(groupID, std::format("指令\"{}\"错误：{}", taskName, e.what()));
-						std::cout << ERROR_WITH_STACKTRACE(std::format("指令\"{}\"错误：{}", taskName, e.what())) << '\n';
 						return;
 					}
 
-					timers.addTask(taskName, interval, &Command::groupExcute, this, groupID, senderID, commandName, commandArgs);
+					if (Args[0] == "remove")
+					{
+						long long position = 0;
+						{
+							auto jo = qjson::JParser::fastParse(Args[1]);
+							if (jo.getType() != qjson::JValueType::JInt)
+							{
+								Network::sendGroupMessage(groupID, "参数错误");
+								return;
+							}
+							position = jo.getInt();
+						}
 
-					Network::sendGroupMessage(groupID, std::format("添加\"{}\"指令到定时器中成功，间隔为{}毫秒", taskName, interval));
+						try
+						{
+							timers.removeTask(position);
+							Network::sendGroupMessage(groupID, "删除成功");
+							return;
+						}
+						catch (const std::exception& e)
+						{
+							Network::sendGroupMessage(groupID, e.what());
+							std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+							return;
+						}
+					}
+					else
+					{
+						Network::sendGroupMessage(groupID, "没有此指令或参数错误");
+						return;
+					}
 				}
 			},
-			"timer interval(millisecond) command",
+			"timer interval(second) command\n"
+				"timer list\n"
+				"timer remove position(int)\n"
+				,
 			"定时器"
 			);
 

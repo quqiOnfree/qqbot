@@ -25,7 +25,6 @@ namespace qqbot
 		}
 
 		//不允许复制和转移
-
 		Timer(const Timer&) = delete;
 		Timer(Timer&&) = delete;
 
@@ -40,9 +39,9 @@ namespace qqbot
 
 		//interval: ms
 		template<typename Func, typename... Args>
-		void start(int interval, Func&& func, Args&&... args)
+		void start(long long interval, Func&& func, Args&&... args)
 		{
-			if (!expired)
+			if (!static_cast<bool>(expired))
 				return;
 
 			std::function<void()> task = std::bind(std::forward<Func>(func),
@@ -52,7 +51,7 @@ namespace qqbot
 			expired = false;
 			std::thread([this, interval, task]()
 				{
-				while (!tryToExpire)
+				while (!static_cast<bool>(tryToExpire))
 				{
 					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 					task();
@@ -67,10 +66,10 @@ namespace qqbot
 		//停止定时器
 		void stop()
 		{
-			if (expired)
+			if (static_cast<bool>(expired))
 				return;
 
-			if (tryToExpire)
+			if (static_cast<bool>(tryToExpire))
 				return;
 
 			tryToExpire = true;
@@ -78,8 +77,10 @@ namespace qqbot
 			std::unique_lock<std::mutex> locker(mut);
 			cv.wait(locker, [this] {return static_cast<bool>(expired); });
 
-			if (expired)
+			if (static_cast<bool>(expired))
 				tryToExpire = false;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 
 	private:
@@ -102,8 +103,18 @@ namespace qqbot
 			}
 		}
 
+		/// <summary>
+		/// 添加函数任务
+		/// </summary>
+		/// <typeparam name="Func">函数类型</typeparam>
+		/// <typeparam name="...Args">函数参数类型</typeparam>
+		/// <param name="taskName">任务名</param>
+		/// <param name="interval">运行间隔（秒）</param>
+		/// <param name="func">函数</param>
+		/// <param name="...args">参数</param>
+		/// <returns>如果已经有此任务就返回false，没有就返回true</returns>
 		template<typename Func, typename... Args>
-		bool addTask(const std::string& taskName, int interval, Func&& func, Args&&... args)
+		bool addTask(const std::string& taskName, long long interval, Func&& func, Args&&... args)
 		{
 			if (m_tasks.find(taskName) != m_tasks.end())
 			{
@@ -112,12 +123,19 @@ namespace qqbot
 
 			m_taskNames.push_back(taskName);
 			m_tasks[taskName] = std::make_shared<Timer>();
-			m_tasks[taskName]->start(interval, std::forward<Func>(func), std::forward<Args>(args)...);
+			m_tasks[taskName]->start(interval * 1000ll, std::forward<Func>(func), std::forward<Args>(args)...);
 
 			return true;
 		}
 
-		bool addTask(const std::string& taskName, int interval, std::function<void()> function)
+		/// <summary>
+		/// 添加函数任务
+		/// </summary>
+		/// <param name="taskName">任务名</param>
+		/// <param name="interval">运行间隔（秒）</param>
+		/// <param name="function">函数</param>
+		/// <returns>如果已经有此任务就返回false，没有就返回true</returns>
+		bool addTask(const std::string& taskName, long long interval, std::function<void()> function)
 		{
 			if (m_tasks.find(taskName) != m_tasks.end())
 			{
@@ -126,12 +144,16 @@ namespace qqbot
 
 			m_taskNames.push_back(taskName);
 			m_tasks[taskName] = std::make_shared<Timer>();
-			m_tasks[taskName]->start(interval, function);
+			m_tasks[taskName]->start(interval * 1000ll, function);
 
 			return true;
 		}
 
-		void removeTask(int postion)
+		/// <summary>
+		/// 删除任务
+		/// </summary>
+		/// <param name="postion">任务在任务列表中的位置</param>
+		void removeTask(long long postion)
 		{
 			if (postion >= m_taskNames.size())
 				throw THROW_ERROR("The postion is invalid.");
@@ -140,6 +162,10 @@ namespace qqbot
 			m_taskNames.erase(m_taskNames.begin() + postion);
 		}
 
+		/// <summary>
+		/// 获取任务列表
+		/// </summary>
+		/// <returns>任务列表</returns>
 		const std::vector<std::string>& getTaskList() const
 		{
 			return m_taskNames;
