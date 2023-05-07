@@ -44,7 +44,7 @@ namespace qqbot
 		catch (const std::exception& e)
 		{
 			Network::sendUserMessage(senderUID, e.what());
-			std::cout << Error::outErrorMessage(e.what()) << '\n';
+			std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
 		}
 
 		return {};

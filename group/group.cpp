@@ -2,6 +2,7 @@
 
 #include <string>
 #include <Json.h>
+#include <stacktrace>
 
 #include "permission.h"
 #include "network.h"
@@ -48,7 +49,7 @@ namespace qqbot
 		catch (const std::exception& e)
 		{
 			Network::sendGroupMessage(groupID, e.what());
-			std::cout << Error::outErrorMessage(e.what()) << '\n';
+			std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
 		}
 
 		return {};

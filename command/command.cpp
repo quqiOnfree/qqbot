@@ -242,7 +242,20 @@ namespace qqbot
 					std::string commandName;
 					std::vector<std::string> commandArgs;
 
-					Command::splitCommand(taskName, commandName, commandArgs);
+					try
+					{
+						//检测command是否合法
+						Command::splitCommand(taskName, commandName, commandArgs);
+
+						//测试是否能成功
+						this->groupExcute(groupID, senderID, commandName, commandArgs);
+					}
+					catch (const std::exception& e)
+					{
+						Network::sendGroupMessage(groupID, std::format("指令\"{}\"错误：{}", taskName, e.what()));
+						std::cout << ERROR_WITH_STACKTRACE(std::format("指令\"{}\"错误：{}", taskName, e.what())) << '\n';
+						return;
+					}
 
 					timers.addTask(taskName, interval, &Command::groupExcute, this, groupID, senderID, commandName, commandArgs);
 
@@ -468,7 +481,7 @@ namespace qqbot
 
 	void Command::splitCommand(const std::string& command, std::string& commandHead, std::vector<std::string>& args)
 	{
-		std::string message = command;
+		const std::string& message = command;
 
 		if (message.size() <= 1ll)
 			throw THROW_ERROR("命令过小");
@@ -517,7 +530,7 @@ namespace qqbot
 			args = std::move(parseString);
 			return;
 		}
-		else if (!message.empty() && message[0] == '!')
+		else if (!message.empty() && message[0] != '!')
 		{
 			throw THROW_ERROR("输入非法");
 		}
