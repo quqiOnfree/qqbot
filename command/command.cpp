@@ -261,16 +261,16 @@ namespace qqbot
 				{
 					std::string helpMsg;
 
-					for (auto i = m_GroupHandlers.begin(); i != m_GroupHandlers.end(); i++)
+					for (auto& [functionName, functionHandler] : m_GroupHandlers)
 					{
 						bool canUseCommand = false;
 						if (m_permission->hasUserOperator(senderID))
 						{
 							canUseCommand = true;
 						}
-						else if (m_permission->hasSingleGroupDefaultPermission(groupID, i->first))
+						else if (m_permission->hasSingleGroupDefaultPermission(groupID, functionName))
 						{
-							if (m_permission->getSingleGroupDefaultPermission(groupID, i->first))
+							if (m_permission->getSingleGroupDefaultPermission(groupID, functionName))
 							{
 								canUseCommand = true;
 							}
@@ -279,9 +279,9 @@ namespace qqbot
 								continue;
 							}
 						}
-						else if (m_permission->hasGroupDefaultPermission(i->first))
+						else if (m_permission->hasGroupDefaultPermission(functionName))
 						{
-							if (m_permission->getGroupDefaultPermission(i->first))
+							if (m_permission->getGroupDefaultPermission(functionName))
 							{
 								canUseCommand = true;
 							}
@@ -293,7 +293,7 @@ namespace qqbot
 
 						if (canUseCommand)
 						{
-							helpMsg += std::format("[!{}] {}\n", i->first, m_groupCommandDescriptions[i->first]);
+							helpMsg += std::format("[!{}] {}\n", functionName, m_groupCommandDescriptions[functionName]);
 						}
 					}
 

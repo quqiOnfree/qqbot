@@ -46,7 +46,7 @@ namespace qqbot
 			m_gocq_port = static_cast<unsigned short>(m_json["go-cqhttp"]["port"].getInt());
 
 			//server
-			m_server_ip = m_json["sever"]["ip"].getString();
+			m_server_ip = m_json["server"]["ip"].getString();
 			m_server_port = static_cast<unsigned short>(m_json["server"]["port"].getInt());
 		}
 		catch (const std::exception&)
@@ -182,7 +182,6 @@ namespace qqbot
 	{
 		//创建config.json
 		std::cout << "请填写 ./config/config.json\n";
-
 		std::filesystem::create_directory("./config");
 
 		std::ofstream outfile("./config/config.json");
@@ -192,7 +191,7 @@ namespace qqbot
 		m_json["permission"]["default"]["help"] = true;
 
 		//server
-		m_json["sever"]["ip"] = "127.0.0.1";
+		m_json["server"]["ip"] = "127.0.0.1";
 		m_json["server"]["port"] = 5800;
 
 		//go-cqhttp
@@ -200,5 +199,6 @@ namespace qqbot
 		m_json["go-cqhttp"]["port"] = 5700;
 
 		outfile << qjson::JWriter::fastFormatWrite(m_json);
+		outfile.close();
 	}
 }

@@ -31,10 +31,10 @@ namespace qqbot
 
 	void Register::run()
 	{
-		for (auto i = m_plugins.begin(); i != m_plugins.end(); i++)
+		for (auto& [pluginName, plugin] : m_plugins)
 		{
-			std::cout << "Plugin " << i->first << " v" << i->second->pluginInfo.version << " onEnabled\n";
-			i->second->onEnable();
+			std::cout << "Plugin " << pluginName << " v" << plugin->pluginInfo.version << " onEnabled\n";
+			plugin->onEnable();
 		}
 	}
 
