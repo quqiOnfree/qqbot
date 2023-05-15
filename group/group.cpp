@@ -2,7 +2,6 @@
 
 #include <string>
 #include <Json.h>
-#include <stacktrace>
 
 #include "permission.h"
 #include "network.h"

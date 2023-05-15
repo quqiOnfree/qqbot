@@ -68,29 +68,13 @@ namespace qqbot
 
 	bool Permission::hasGroupDefaultPermission(const std::string& permissionName)
 	{
-		if (m_json["permission"]["default"].hasMember(permissionName)
-			)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return m_json["permission"]["default"].hasMember(permissionName);
 	}
 
 	bool Permission::getGroupDefaultPermission(const std::string& permissionName)
 	{
-		if (this->hasGroupDefaultPermission(permissionName) &&
-			m_json["permission"]["default"][permissionName.c_str()].getBool()
-			)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return this->hasGroupDefaultPermission(permissionName) &&
+			m_json["permission"]["default"][permissionName.c_str()].getBool();
 	}
 
 	void Permission::setGroupDefaultPermission(const std::string& permissionName, bool boolean)
@@ -99,34 +83,17 @@ namespace qqbot
 		this->save();
 	}
 
-
 	bool Permission::hasSingleGroupDefaultPermission(long long groupID, const std::string& permissionName)
 	{
-		if (m_json["permission"].hasMember("group") &&
+		return m_json["permission"].hasMember("group") &&
 			m_json["permission"]["group"].hasMember(std::to_string(groupID)) &&
-			m_json["permission"]["group"][std::to_string(groupID).c_str()].hasMember(permissionName)
-			)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+			m_json["permission"]["group"][std::to_string(groupID).c_str()].hasMember(permissionName);
 	}
 
 	bool Permission::getSingleGroupDefaultPermission(long long groupID, const std::string& permissionName)
 	{
-		if (this->hasSingleGroupDefaultPermission(groupID, permissionName) &&
-			m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()].getBool()
-			)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return this->hasSingleGroupDefaultPermission(groupID, permissionName) &&
+			m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()].getBool();
 	}
 
 	void Permission::setSingleGroupDefaultPermission(long long groupID, const std::string& permissionName, bool boolean)
@@ -139,14 +106,10 @@ namespace qqbot
 	{
 		qjson::list_t& list = m_json["permission"]["op"].getList();
 
-		if (std::find(list.begin(),
+		return std::find(list.begin(),
 			list.end(),
 			qjson::JObject(userID)
-		) != list.end())
-		{
-			return true;
-		}
-		return false;
+		) != list.end();
 	}
 
 	void Permission::setUserOperator(long long userID, bool boolean)

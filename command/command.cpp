@@ -181,11 +181,11 @@ namespace qqbot
 					if (Args[0] == "list")
 					{
 						std::string outString;
+						const auto& plugins = pluginRegister.getPlugins();
 
-						const std::unordered_map<std::string, std::shared_ptr<CppPlugin>>& plugins = pluginRegister.getPlugins();
-						for (auto i = plugins.begin(); i != plugins.end(); i++)
+						for (auto const& [pluginName, plugin] : plugins)
 						{
-							outString += std::format("-----------------------\n[{}]\nAuthor: {}\nVersion: {}\n", i->first, i->second->pluginInfo.author, i->second->pluginInfo.version);
+							outString += std::format("-----------------------\n[{}]\nAuthor: {}\nVersion: {}\n", pluginName, plugin->pluginInfo.author, plugin->pluginInfo.version);
 						}
 
 						qqbot::Network::sendGroupMessage(groupID, outString);
@@ -240,7 +240,7 @@ namespace qqbot
 				}
 				else
 				{
-					auto addTask = [=]() -> int{
+					auto addTask = [&]() -> int{
 						{
 							long long interval = 0;
 							try

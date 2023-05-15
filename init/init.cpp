@@ -9,6 +9,7 @@
 #include "network.h"
 #include "singleUser.h"
 #include "group.h"
+#include "definition.h"
 
 namespace qqbot
 {
@@ -51,10 +52,10 @@ namespace qqbot
 		//测试是否能够连接go-cqhttp
 		if (!Network::testConnection())
 		{
-			std::cout << "无法连接至go-cqhttp(" << permission.m_gocq_ip << ':' << permission.m_gocq_port << ")\n";
+			std::cout << std::format("无法连接至go-cqhttp({}:{})\n", permission.m_gocq_ip, permission.m_gocq_port);
 			return -1;
 		}
-		std::cout << "成功连接至go-cqhttp(" << permission.m_gocq_ip << ':' << permission.m_gocq_port << ")\n";
+		std::cout << std::format("成功连接至go-cqhttp({}:{})\n", permission.m_gocq_ip, permission.m_gocq_port);
 
 		//插件注册
 		try
@@ -64,13 +65,13 @@ namespace qqbot
 		}
 		catch (const std::exception& e)
 		{
-			std::cout << "发生错误：" << e.what();
+			std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
 			return -1;
 		}
 		std::cout << "全部插件已经成功加载！\n";
 
 		//http服务器开启
-		std::cout << "开启服务器监听(" << permission.m_server_ip << ':' << permission.m_server_port << ")\n";
+		std::cout << std::format("开启服务器监听({}:{})\n", permission.m_server_ip, permission.m_server_port);
 		server.Post("/", splitUserNGroup);
 		server.listen(permission.m_server_ip, permission.m_server_port);
 		return 0;

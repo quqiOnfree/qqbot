@@ -11,7 +11,7 @@
 #include <vector>
 #include <memory>
 
-#include <definition.h>
+#include "definition.h"
 
 namespace qqbot
 {

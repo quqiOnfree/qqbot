@@ -10,12 +10,5 @@ qqbot::Command		command(&permission);
 
 int main()
 {
-	if (qqbot::init(server, permission, pluginRegister))
-	{
-		return -1;
-	}
-	else
-	{
-		return 0;
-	}
+	return qqbot::init(server, permission, pluginRegister);
 }
