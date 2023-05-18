@@ -112,6 +112,7 @@ namespace qqbot
 				{
 					m_removeTask.pop();
 					m_tasks.pop();
+					lock.unlock();
 					if (!m_tasks.empty())
 						std::this_thread::sleep_for(std::chrono::milliseconds((m_tasks.top().clock - std::clock()) > 0 ? (m_tasks.top().clock - std::clock()) : 0));
 					continue;
