@@ -11,7 +11,7 @@ namespace qqbot
 	bool Network::testConnection()
 	{
 		static httplib::Client cli(std::format("http://{}:{}", permission.m_gocq_ip, permission.m_gocq_port));
-		return cli.Get("/").error() != httplib::Error::Success;
+		return cli.Get("/").error() == httplib::Error::Success;
 	}
 
 	void Network::sendGroupMessage(long long groupID, const std::string& message)

@@ -287,7 +287,7 @@ namespace qqbot
 							}
 
 							if (!timers.addTask(taskName,
-								interval,
+								interval * 1000,
 								&Command::groupExcute,
 								this,
 								groupID,

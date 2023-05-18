@@ -4,175 +4,137 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
-#include <algorithm>
-#include <climits>
-#include <future>
-#include <unordered_map>
 #include <vector>
-#include <memory>
-
-#include "definition.h"
+#include <queue>
+#include <functional>
 
 namespace qqbot
 {
-	class Timer
-	{
-	public:
-		Timer()
-		{
-			expired = true;
-			tryToExpire = false;
-		}
-
-		//不允许复制和转移
-		Timer(const Timer&) = delete;
-		Timer(Timer&&) = delete;
-
-		~Timer()
-		{
-			this->stop();
-		}
-
-		//不允许复制和转移
-		Timer& operator=(const Timer&) = delete;
-		Timer& operator=(Timer&&) = delete;
-
-		//interval: ms
-		template<typename Func, typename... Args>
-		void start(long long interval, Func&& func, Args&&... args)
-		{
-			if (!static_cast<bool>(expired))
-				return;
-
-			std::function<void()> task = std::bind(std::forward<Func>(func),
-				std::forward<Args>(args)...
-			);
-
-			expired = false;
-			std::thread([this, interval, task]()
-				{
-				while (!static_cast<bool>(tryToExpire))
-				{
-					std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-					task();
-				}
-				std::lock_guard<std::mutex> locker(mut);
-				expired = true;
-				cv.notify_one();
-
-				}).detach();
-		}
-
-		//停止定时器
-		void stop()
-		{
-			if (static_cast<bool>(expired))
-				return;
-
-			if (static_cast<bool>(tryToExpire))
-				return;
-
-			tryToExpire = true;
-
-			std::unique_lock<std::mutex> locker(mut);
-			cv.wait(locker, [this] {return static_cast<bool>(expired); });
-
-			if (static_cast<bool>(expired))
-				tryToExpire = false;
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}
-
-	private:
-		std::condition_variable cv;
-		std::mutex mut;
-
-		std::atomic<bool> expired; //timer stop status
-		std::atomic<bool> tryToExpire;//timer is in stop process.
-	};
-
 	class Timers
 	{
 	public:
-		Timers() = default;
-		~Timers()
+		Timers() :
+			m_isRunning(true),
+			m_thread(std::bind(&Timers::workFunction, this))
 		{
-			for (auto i = m_tasks.begin(); i != m_tasks.end(); i++)
-			{
-				i->second->stop();
-			}
 		}
 
-		/// <summary>
-		/// 添加函数任务
-		/// </summary>
-		/// <typeparam name="Func">函数类型</typeparam>
-		/// <typeparam name="...Args">函数参数类型</typeparam>
-		/// <param name="taskName">任务名</param>
-		/// <param name="interval">运行间隔（秒）</param>
-		/// <param name="func">函数</param>
-		/// <param name="...args">参数</param>
-		/// <returns>如果已经有此任务就返回false，没有就返回true</returns>
+		~Timers()
+		{
+			m_isRunning = false;
+			m_cv.notify_all();
+
+			if (m_thread.joinable())
+				m_thread.join();
+		}
+
+
+		// 添加函数任务
 		template<typename Func, typename... Args>
 		bool addTask(const std::string& taskName, long long interval, Func&& func, Args&&... args)
 		{
-			if (m_tasks.find(taskName) != m_tasks.end())
+			if (std::find(m_taskNames.begin(), m_taskNames.end(), taskName) != m_taskNames.end())
 			{
 				return false;
 			}
 
+			std::unique_lock<std::mutex> lock(m_mutex);
+
 			m_taskNames.push_back(taskName);
-			m_tasks[taskName] = std::make_shared<Timer>();
-			m_tasks[taskName]->start(interval * 1000ll, std::forward<Func>(func), std::forward<Args>(args)...);
+			m_tasks.push({ std::clock(), taskName, std::bind(std::forward<Func>(func), std::forward<Args>(args)...), interval });
+
+			m_cv.notify_all();
 
 			return true;
 		}
 
-		/// <summary>
-		/// 添加函数任务
-		/// </summary>
-		/// <param name="taskName">任务名</param>
-		/// <param name="interval">运行间隔（秒）</param>
-		/// <param name="function">函数</param>
-		/// <returns>如果已经有此任务就返回false，没有就返回true</returns>
-		bool addTask(const std::string& taskName, long long interval, std::function<void()> function)
-		{
-			if (m_tasks.find(taskName) != m_tasks.end())
-			{
-				return false;
-			}
-
-			m_taskNames.push_back(taskName);
-			m_tasks[taskName] = std::make_shared<Timer>();
-			m_tasks[taskName]->start(interval * 1000ll, function);
-
-			return true;
-		}
-
-		/// <summary>
-		/// 删除任务
-		/// </summary>
-		/// <param name="postion">任务在任务列表中的位置</param>
+		// 删除任务
 		void removeTask(long long postion)
 		{
-			if (postion >= m_taskNames.size())
-				throw THROW_ERROR("The postion is invalid.");
-			m_tasks[m_taskNames[postion]]->stop();
-			m_tasks.erase(m_taskNames[postion]);
+			if (postion >= static_cast<long long>(m_taskNames.size()))
+				throw std::logic_error("The postion is invalid.");
+
+			std::unique_lock<std::mutex> lock(m_mutex);
+
+			std::string taskName = *(m_taskNames.begin() + postion);
+
+			m_removeTask.push(taskName);
 			m_taskNames.erase(m_taskNames.begin() + postion);
+
+			m_cv.notify_all();
 		}
 
-		/// <summary>
-		/// 获取任务列表
-		/// </summary>
-		/// <returns>任务列表</returns>
+		// 获取任务列表
 		const std::vector<std::string>& getTaskList() const
 		{
 			return m_taskNames;
 		}
 
+	protected:
+		struct Task
+		{
+			std::clock_t			clock = 0;
+			std::string				taskName;
+			std::function<void()>	function;
+			long long				interval = 0;
+
+			Task& operator =(const Task& t)
+			{
+				if (this == &t)
+					return *this;
+
+				clock = t.clock;
+				taskName = t.taskName;
+				function = t.function;
+				interval = t.interval;
+				return *this;
+			}
+		};
+
+		struct Lesser
+		{
+			bool operator()(const Task& a, const Task& b)
+			{
+				return a.clock > b.clock;
+			}
+		};
+
+		void workFunction()
+		{
+			while (m_isRunning)
+			{
+				std::unique_lock<std::mutex> lock(m_mutex);
+				m_cv.wait(lock, [&]() {return (!m_tasks.empty() && m_tasks.top().clock <= std::clock()) || !m_isRunning; });
+				if (!m_isRunning)
+					return;
+
+				if (!m_removeTask.empty() && m_removeTask.front() == m_tasks.top().taskName)
+				{
+					m_removeTask.pop();
+					m_tasks.pop();
+					if (!m_tasks.empty())
+						std::this_thread::sleep_for(std::chrono::milliseconds((m_tasks.top().clock - std::clock()) > 0 ? (m_tasks.top().clock - std::clock()) : 0));
+					continue;
+				}
+
+				Task task = m_tasks.top();
+				m_tasks.pop();
+				task.function();
+				task.clock += task.interval;
+				m_tasks.push(std::move(task));
+				lock.unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds((m_tasks.top().clock - std::clock()) > 0 ? (m_tasks.top().clock - std::clock()) : 0));
+			}
+		}
+
 	private:
-		std::vector<std::string> m_taskNames;
-		std::unordered_map<std::string, std::shared_ptr<Timer>> m_tasks;
+		std::vector<std::string>								m_taskNames;
+		std::priority_queue<Task, std::vector<Task>, Lesser>	m_tasks;
+		std::queue<std::string>									m_removeTask;
+
+		std::condition_variable									m_cv;
+		std::mutex												m_mutex;
+		std::thread												m_thread;
+		std::atomic<bool>										m_isRunning;
 	};
 }
