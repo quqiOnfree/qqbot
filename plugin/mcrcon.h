@@ -91,7 +91,7 @@ namespace MCRCON
 					//发送命令
 					while (true)
 					{
-						std::pair<long long, std::string> get = co_await asyncGetCommand(use_awaitable);
+						std::pair<long long, std::string> get = co_await async_get_command(use_awaitable);
 						groupID = get.first;
 						command = get.second;
 
@@ -101,7 +101,7 @@ namespace MCRCON
 						co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
 
 						//返回数据
-						char dataBuffer[1024]{ 0 };
+						char dataBuffer[8192]{ 0 };
 						size_t n = co_await socket.async_read_some(buffer(dataBuffer), use_awaitable);
 
 						auto repack = stringToPack(std::string(dataBuffer, n));
@@ -199,18 +199,24 @@ namespace MCRCON
 		//二进制数据转换为RCONPack
 		std::shared_ptr<RCONPackage> stringToPack(const std::string& data)
 		{
+			if (data.size() < sizeof(RCONPackage))
+				throw THROW_ERROR("Data is too small.");
+
 			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
 				reinterpret_cast<RCONPackage*>(
 					new char[data.size()] {0}));
 
 			memcpy_s(localPack.get(), data.size(), data.c_str(), data.size());
 
+			if (localPack->length + sizeof(int) > data.size())
+				throw THROW_ERROR("Data is too small.");
+
 			return localPack;
 		}
 
 		//异步获取命令和对应的群聊
 		template<asio::completion_token_for<void(std::pair<long long, std::string>)> CompletionToken>
-		auto asyncGetCommand(CompletionToken&& token)
+		auto async_get_command(CompletionToken&& token)
 		{
 			auto func = [&]() -> std::pair<long long, std::string> {
 				std::unique_lock<std::mutex> lock(m_mutex);
