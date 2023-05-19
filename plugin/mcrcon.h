@@ -293,94 +293,96 @@ namespace MCRCON
 				auto executor = co_await this_coro::executor;
 
 				ip::tcp::endpoint endpoint(ip::make_address(m_endPoint.host), m_endPoint.port);
-				ip::tcp::socket socket(m_io_context);
+				
 
 				long long groupID = 0;
 				std::string command;
 
-				try
+				while (m_coroutineIsRunning)
 				{
-					co_await socket.async_connect(endpoint, use_awaitable);
+					ip::tcp::socket socket(m_io_context);
 
-					//登录
+					try
 					{
-						size_t packSize = 0;
-						auto pack = makePackage(m_endPoint.password, 3, m_requestID, packSize);
+						co_await socket.async_connect(endpoint, use_awaitable);
 
-						co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
-					}
-
-					//获取是否登录成功
-					{
-						char dataBuffer[1024]{ 0 };
-
-						size_t n = co_await socket.async_read_some(buffer(dataBuffer), use_awaitable);
-
-						if (!n)
-							throw THROW_ERROR("无法接收数据");
-
-						auto pack = stringToPack(std::string(dataBuffer, n));
-
-						if (pack->requestID != m_requestID)
-							throw THROW_ERROR("RCON密码错误");
-					}
-
-					//发送命令
-					while (m_coroutineIsRunning)
-					{
-						std::pair<long long, std::string> get = co_await async_get_command(use_awaitable);
-						groupID = get.first;
-						command = get.second;
-
-						size_t packSize = 0;
-						auto pack = makePackage(command, 2, m_requestID, packSize);
-
-						co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
-
-						//返回数据
-
-						Package<int> package;
-						do
+						//登录
 						{
-							char dataBuffer[8192]{ 0 };
+							size_t packSize = 0;
+							auto pack = makePackage(m_endPoint.password, 3, m_requestID, packSize);
+
+							co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
+						}
+
+						//获取是否登录成功
+						{
+							char dataBuffer[1024]{ 0 };
+
 							size_t n = co_await socket.async_read_some(buffer(dataBuffer), use_awaitable);
-							package.write(std::string(dataBuffer, n));
-						} while (!package.canRead());
 
-						std::string result;
-						int n = package.firstMsgLength();
-						auto repack = stringToPack(package.read());
-						std::string data(repack->data, n - sizeof(int) * 2 - 2);
+							if (!n)
+								throw THROW_ERROR("无法接收数据");
 
-						if (data.empty())
-						{
-							qqbot::Network::sendGroupMessage(groupID, "true");
-							continue;
+							auto pack = stringToPack(std::string(dataBuffer, n));
+
+							if (pack->requestID != m_requestID)
+								throw THROW_ERROR("RCON密码错误");
 						}
 
-						for (char& i : data)
+						//发送命令
+						while (m_coroutineIsRunning)
 						{
-							if (i == '/')
-							{
-								result += "\n/";
-							}
-							else
-							{
-								result += i;
-							}
-						}
+							std::pair<long long, std::string> get = co_await async_get_command(use_awaitable);
+							groupID = get.first;
+							command = get.second;
 
-						qqbot::Network::sendGroupMessage(groupID, result);
+							size_t packSize = 0;
+							auto pack = makePackage(command, 2, m_requestID, packSize);
+
+							co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
+
+							//返回数据
+
+							Package<int> package;
+							do
+							{
+								char dataBuffer[8192]{ 0 };
+								size_t n = co_await socket.async_read_some(buffer(dataBuffer), use_awaitable);
+								package.write(std::string(dataBuffer, n));
+							} while (!package.canRead());
+
+							std::string result;
+							int n = package.firstMsgLength();
+							auto repack = stringToPack(package.read());
+							std::string data(repack->data, n - sizeof(int) * 2 - 2);
+
+							if (data.empty())
+							{
+								qqbot::Network::sendGroupMessage(groupID, "true");
+								continue;
+							}
+
+							for (char& i : data)
+							{
+								if (i == '/')
+								{
+									result += "\n/";
+								}
+								else
+								{
+									result += i;
+								}
+							}
+
+							qqbot::Network::sendGroupMessage(groupID, result);
+						}
+					}
+					catch (const std::exception& e)
+					{
+						qqbot::Network::sendGroupMessage(groupID, std::format("无法发送指令：{}", e.what()));
+						std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
 					}
 				}
-				catch (const std::exception& e)
-				{
-					//协程运行为false
-					m_coroutineIsRunning = false;
-					qqbot::Network::sendGroupMessage(groupID, std::format("无法发送指令：{}", e.what()));
-					std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
-				}
-
 				co_return;
 				},
 				asio::detached);
