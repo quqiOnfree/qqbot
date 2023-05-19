@@ -171,6 +171,69 @@ namespace MCRCON
 			char	data[2];
 		};
 
+		template<typename Ty>
+		requires std::integral<Ty>
+		class Package
+		{
+		public:
+			Package() = default;
+			~Package() = default;
+
+			Package(const Package&) = delete;
+			Package(Package&&) = delete;
+
+			Package& operator =(const Package&) = delete;
+			Package& operator =(Package&&) = delete;
+
+			void write(std::string_view data)
+			{
+				m_buffer += data;
+			}
+
+			bool canRead() const
+			{
+				if (m_buffer.size() < sizeof(Ty))
+					return false;
+
+				if (firstMsgLength() + sizeof(Ty) > m_buffer.size())
+					return false;
+
+				return true;
+			}
+
+			Ty firstMsgLength()
+			{
+				Ty length = 0;
+				memcpy_s(&length, sizeof(Ty), m_buffer.c_str(), sizeof(Ty));
+				return length;
+			}
+
+			std::string read()
+			{
+				if (!canRead())
+					throw std::logic_error("Can't read data");
+
+				std::string result = m_buffer.substr(0, firstMsgLength());
+				m_buffer = m_buffer.substr(firstMsgLength());
+
+				return result;
+			}
+
+			static std::string makePackage(std::string_view data)
+			{
+				Ty lenght = static_cast<Ty>(data.size());
+				std::string result;
+				result.resize(sizeof(Ty));
+				memcpy_s(result.data(), sizeof(Ty), result, sizeof(Ty));
+				result += data;
+
+				return result;
+			}
+
+		private:
+			std::string m_buffer;
+		};
+
 		//生成RCONPack
 		std::shared_ptr<RCONPackage> makePackage(const std::string& data, int type, int requestID, size_t& size)
 		{
