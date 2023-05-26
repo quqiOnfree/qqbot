@@ -15,6 +15,34 @@ namespace qqbot
 {
 	httplib::Response groupMethod(const httplib::Request& req)
 	{
+		auto strip = [](const std::string& str) -> std::string {
+			if (str.empty())
+				return std::string();
+
+			size_t first = 0;
+			size_t end = str.size() - 1;
+			for (auto i = str.begin(); i != str.end(); i++)
+			{
+				if (*i == ' ' || *i == '\n' || *i == '\t')
+					first++;
+				else
+					break;
+			}
+
+			for (auto i = str.end() - 1; i != str.begin(); i--)
+			{
+				if (*i == ' ' || *i == '\n' || *i == '\t')
+					end--;
+				else
+					break;
+			}
+
+			if (first < end)
+				return std::string(str.begin() + first, str.begin() + end + 1);
+			else
+				return std::string();
+		};
+
 		//发送消息函数
 
 		//获取到的json消息
@@ -27,11 +55,12 @@ namespace qqbot
 		long long groupID = getjson["group_id"].getInt();
 
 		//发送的消息
-		std::string message = getjson["message"].getString();
+		std::string message = strip(getjson["message"].getString());
 
 		if (message.size() <= 1ll)
 			return {};
-		else if (message[0] != '!')
+		
+		if (message[0] != '!')
 			return {};
 
 		std::string commandName;

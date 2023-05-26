@@ -5,6 +5,7 @@
 #include <format>
 #include <random>
 #include <ctime>
+#include <mutex>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
@@ -35,6 +36,8 @@ namespace Divination
 					}
 					else if (Args.size() == 1)
 					{
+						std::unique_lock<std::mutex> lock(m_mutex);
+
 						qqbot::Network::sendGroupMessage(groupID, std::format(R"(事件：
 {}
 
@@ -51,6 +54,8 @@ Args[0], static_cast<long double>(m_mt() % 100000) / 1000));
 						{
 							outString += *i + ' ';
 						}
+
+						std::unique_lock<std::mutex> lock(m_mutex);
 
 						qqbot::Network::sendGroupMessage(groupID, std::format(R"(事件：
 {}
@@ -70,5 +75,6 @@ outString, static_cast<long double>(m_mt() % 100000) / 1000));
 
 	private:
 		std::mt19937_64 m_mt;
+		std::mutex		m_mutex;
 	};
 }

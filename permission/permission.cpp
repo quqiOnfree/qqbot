@@ -68,23 +68,27 @@ namespace qqbot
 
 	bool Permission::hasGroupDefaultPermission(const std::string& permissionName)
 	{
+		std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
 		return m_json["permission"]["default"].hasMember(permissionName);
 	}
 
 	bool Permission::getGroupDefaultPermission(const std::string& permissionName)
 	{
+		std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
 		return this->hasGroupDefaultPermission(permissionName) &&
 			m_json["permission"]["default"][permissionName.c_str()].getBool();
 	}
 
 	void Permission::setGroupDefaultPermission(const std::string& permissionName, bool boolean)
 	{
+		std::lock_guard<std::shared_mutex> lock(m_sharedMutex);
 		m_json["permission"]["default"][permissionName.c_str()] = boolean;
 		this->save();
 	}
 
 	bool Permission::hasSingleGroupDefaultPermission(long long groupID, const std::string& permissionName)
 	{
+		std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
 		return m_json["permission"].hasMember("group") &&
 			m_json["permission"]["group"].hasMember(std::to_string(groupID)) &&
 			m_json["permission"]["group"][std::to_string(groupID).c_str()].hasMember(permissionName);
@@ -92,18 +96,21 @@ namespace qqbot
 
 	bool Permission::getSingleGroupDefaultPermission(long long groupID, const std::string& permissionName)
 	{
+		std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
 		return this->hasSingleGroupDefaultPermission(groupID, permissionName) &&
 			m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()].getBool();
 	}
 
 	void Permission::setSingleGroupDefaultPermission(long long groupID, const std::string& permissionName, bool boolean)
 	{
+		std::lock_guard<std::shared_mutex> lock(m_sharedMutex);
 		m_json["permission"]["group"][std::to_string(groupID).c_str()][permissionName.c_str()] = boolean;
 		this->save();
 	}
 
 	bool Permission::hasUserOperator(long long userID)
 	{
+		std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
 		qjson::list_t& list = m_json["permission"]["op"].getList();
 
 		return std::find(list.begin(),
@@ -114,6 +121,7 @@ namespace qqbot
 
 	void Permission::setUserOperator(long long userID, bool boolean)
 	{
+		std::lock_guard<std::shared_mutex> lock(m_sharedMutex);
 		qjson::list_t& list = m_json["permission"]["op"].getList();
 		auto itor = std::find(list.begin(),
 			list.end(),
@@ -138,6 +146,7 @@ namespace qqbot
 
 	const qjson::JObject& Permission::getUserOperatorList()
 	{
+		std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
 		return m_json["permission"]["op"];
 	}
 

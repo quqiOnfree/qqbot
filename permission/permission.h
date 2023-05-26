@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <fstream>
+#include <shared_mutex>
 
 #include <Json.h>
 
@@ -60,5 +61,7 @@ namespace qqbot
 	private:
 		const std::string	m_filepath;
 		qjson::JObject		m_json;
+
+		std::shared_mutex	m_sharedMutex;
 	};
 }
