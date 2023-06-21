@@ -19,6 +19,130 @@
 
 namespace MCRCON
 {
+	//RCON数据包
+	struct RCONPackage
+	{
+		int		length;
+		int		requestID;
+		int		type;
+		char	data[2];
+
+		//生成RCONPack
+		static std::shared_ptr<RCONPackage> makePackage(const std::string& data, int type, int requestID, size_t& size)
+		{
+			size_t packSize = sizeof(int) * 3ll + data.size() + 2ll;
+
+			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
+				reinterpret_cast<RCONPackage*>(
+					new char[packSize] {0}));
+
+			localPack->type = type;
+			localPack->requestID = requestID;
+			memcpy_s(localPack->data, data.size(), data.c_str(), data.size());
+			localPack->length = static_cast<int>(packSize - sizeof(int));
+
+			size = packSize;
+			return localPack;
+		}
+
+		//RCONPack转换为二进制数据
+		static std::string packToString(std::shared_ptr<RCONPackage> packptr, size_t size)
+		{
+			std::string local(reinterpret_cast<char*>(packptr.get()), size);
+			return local;
+		}
+
+		//二进制数据转换为RCONPack
+		static std::shared_ptr<RCONPackage> stringToPack(const std::string& data)
+		{
+			if (data.size() < sizeof(RCONPackage) - 2)
+				throw THROW_ERROR("Data is too small.");
+
+			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
+				reinterpret_cast<RCONPackage*>(
+					new char[data.size()] {0}));
+
+			memcpy_s(localPack.get(), data.size(), data.c_str(), data.size());
+
+			if (localPack->length + sizeof(int) > data.size())
+				throw THROW_ERROR("Data is too small.");
+
+			return localPack;
+		}
+
+		//获取RCONPack的数据长度
+		static int getDataSize(std::shared_ptr<RCONPackage> pack)
+		{
+			return pack->length - sizeof(int) - 2;
+		}
+	};
+
+	template<typename Ty>
+		requires std::integral<Ty>
+	class Package
+	{
+	public:
+		Package() = default;
+		~Package() = default;
+
+		Package(const Package&) = delete;
+		Package(Package&&) = delete;
+
+		Package& operator =(const Package&) = delete;
+		Package& operator =(Package&&) = delete;
+
+		void write(std::string_view data)
+		{
+			m_buffer += data;
+		}
+
+		bool canRead() const
+		{
+			if (m_buffer.size() < sizeof(Ty))
+				return false;
+
+			Ty length = 0;
+			memcpy_s(&length, sizeof(Ty), m_buffer.c_str(), sizeof(Ty));
+			if (length + sizeof(Ty) > m_buffer.size())
+				return false;
+
+			return true;
+		}
+
+		Ty firstMsgLength()
+		{
+			Ty length = 0;
+			memcpy_s(&length, sizeof(Ty), m_buffer.c_str(), sizeof(Ty));
+			return length;
+		}
+
+		std::string read()
+		{
+			if (!canRead())
+				throw std::logic_error("Can't read data");
+
+			std::string result = m_buffer.substr(0, firstMsgLength() + sizeof(Ty));
+			m_buffer = m_buffer.substr(firstMsgLength() + sizeof(Ty));
+
+			return result;
+		}
+
+		static std::string makePackage(std::string_view data)
+		{
+			Ty lenght = static_cast<Ty>(data.size());
+			std::string result;
+			result.resize(sizeof(Ty));
+			memcpy_s(result.data(), sizeof(Ty), result, sizeof(Ty));
+			result += data;
+
+			return result;
+		}
+
+	private:
+		std::string m_buffer;
+	};
+
+	// plugin
 	class MCRCONPlugin : public qqbot::CppPlugin
 	{
 	public:
@@ -130,123 +254,6 @@ namespace MCRCON
 		}
 
 	protected:
-		//RCON数据包
-		struct RCONPackage
-		{
-			int		length;
-			int		requestID;
-			int		type;
-			char	data[2];
-		};
-
-		template<typename Ty>
-		requires std::integral<Ty>
-		class Package
-		{
-		public:
-			Package() = default;
-			~Package() = default;
-
-			Package(const Package&) = delete;
-			Package(Package&&) = delete;
-
-			Package& operator =(const Package&) = delete;
-			Package& operator =(Package&&) = delete;
-
-			void write(std::string_view data)
-			{
-				m_buffer += data;
-			}
-
-			bool canRead() const
-			{
-				if (m_buffer.size() < sizeof(Ty))
-					return false;
-
-				Ty length = 0;
-				memcpy_s(&length, sizeof(Ty), m_buffer.c_str(), sizeof(Ty));
-				if (length + sizeof(Ty) > m_buffer.size())
-					return false;
-
-				return true;
-			}
-
-			Ty firstMsgLength()
-			{
-				Ty length = 0;
-				memcpy_s(&length, sizeof(Ty), m_buffer.c_str(), sizeof(Ty));
-				return length;
-			}
-
-			std::string read()
-			{
-				if (!canRead())
-					throw std::logic_error("Can't read data");
-
-				std::string result = m_buffer.substr(0, firstMsgLength() + sizeof(Ty));
-				m_buffer = m_buffer.substr(firstMsgLength() + sizeof(Ty));
-
-				return result;
-			}
-
-			static std::string makePackage(std::string_view data)
-			{
-				Ty lenght = static_cast<Ty>(data.size());
-				std::string result;
-				result.resize(sizeof(Ty));
-				memcpy_s(result.data(), sizeof(Ty), result, sizeof(Ty));
-				result += data;
-
-				return result;
-			}
-
-		private:
-			std::string m_buffer;
-		};
-
-		//生成RCONPack
-		std::shared_ptr<RCONPackage> makePackage(const std::string& data, int type, int requestID, size_t& size)
-		{
-			size_t packSize = sizeof(int) * 3ll + data.size() + 2ll;
-
-			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
-				reinterpret_cast<RCONPackage*>(
-					new char[packSize] {0}));
-
-			localPack->type = type;
-			localPack->requestID = requestID;
-			memcpy_s(localPack->data, data.size(), data.c_str(), data.size());
-			localPack->length = static_cast<int>(packSize - sizeof(int));
-
-			size = packSize;
-			return localPack;
-		}
-
-		//RCONPack转换为二进制数据
-		std::string packToString(std::shared_ptr<RCONPackage> packptr, size_t size)
-		{
-			std::string local(reinterpret_cast<char*>(packptr.get()), size);
-			return local;
-		}
-
-		//二进制数据转换为RCONPack
-		std::shared_ptr<RCONPackage> stringToPack(const std::string& data)
-		{
-			if (data.size() < sizeof(RCONPackage) - 2)
-				throw THROW_ERROR("Data is too small.");
-
-			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
-				reinterpret_cast<RCONPackage*>(
-					new char[data.size()] {0}));
-
-			memcpy_s(localPack.get(), data.size(), data.c_str(), data.size());
-
-			if (localPack->length + sizeof(int) > data.size())
-				throw THROW_ERROR("Data is too small.");
-
-			return localPack;
-		}
-
 		//异步获取命令和对应的群聊
 		template<asio::completion_token_for<void(std::pair<long long, std::string>)> CompletionToken>
 		auto async_get_command(CompletionToken&& token)
@@ -272,12 +279,10 @@ namespace MCRCON
 			(asio::completion_handler_for<void(std::pair<long long, std::string>)> auto handler) {
 					// 放置一个空的追踪任务, 防止executor以为当前没有任务而退出
 					auto work = asio::make_work_guard(handler);
-					std::thread([func, handler = std::move(handler), work = std::move(work)]() mutable {
-						asio::dispatch(work.get_executor(), [func, handler = std::move(handler)]() mutable {
-							// 结束追踪任务 返回回调结果
-							std::move(handler)(func());
-							});
-						}).detach();
+					asio::dispatch(work.get_executor(), [func, handler = std::move(handler)]() mutable {
+						// 结束追踪任务 返回回调结果
+						std::move(handler)(func());
+						});
 				}, token);
 		}
 
@@ -300,18 +305,18 @@ namespace MCRCON
 
 				while (m_coroutineIsRunning)
 				{
-					ip::tcp::socket socket(m_io_context);
-
 					try
 					{
+						ip::tcp::socket socket(m_io_context);
+
 						co_await socket.async_connect(endpoint, use_awaitable);
 
 						//登录
 						{
 							size_t packSize = 0;
-							auto pack = makePackage(m_endPoint.password, 3, m_requestID, packSize);
+							auto pack = RCONPackage::makePackage(m_endPoint.password, 3, m_requestID, packSize);
 
-							co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
+							co_await async_write(socket, buffer(RCONPackage::packToString(pack, packSize)), use_awaitable);
 						}
 
 						//获取是否登录成功
@@ -323,7 +328,7 @@ namespace MCRCON
 							if (!n)
 								throw THROW_ERROR("无法接收数据");
 
-							auto pack = stringToPack(std::string(dataBuffer, n));
+							auto pack = RCONPackage::stringToPack(std::string(dataBuffer, n));
 
 							if (pack->requestID != m_requestID)
 								throw THROW_ERROR("RCON密码错误");
@@ -337,9 +342,9 @@ namespace MCRCON
 							command = get.second;
 
 							size_t packSize = 0;
-							auto pack = makePackage(command, 2, m_requestID, packSize);
+							auto pack = RCONPackage::makePackage(command, 2, m_requestID, packSize);
 
-							co_await async_write(socket, buffer(packToString(pack, packSize)), use_awaitable);
+							co_await async_write(socket, buffer(RCONPackage::packToString(pack, packSize)), use_awaitable);
 
 							//返回数据
 
@@ -353,8 +358,8 @@ namespace MCRCON
 
 							std::string result;
 							int n = package.firstMsgLength();
-							auto repack = stringToPack(package.read());
-							std::string data(repack->data, n - sizeof(int) * 2 - 2);
+							auto repack = RCONPackage::stringToPack(package.read());
+							std::string data(repack->data, RCONPackage::getDataSize(repack));
 
 							if (data.empty())
 							{
