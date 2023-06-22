@@ -5,6 +5,7 @@
 #include <string>
 #include <format>
 #include <filesystem>
+#include <shared_mutex>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
@@ -33,12 +34,13 @@ namespace AutoAnswer
 
             try
             {
+                // 配置文件
                 std::ifstream infile("./plugin_config/AutoAnswer/config.json");
 
                 qjson::JObject jo(qjson::JParser::fastParse(infile));
                 const qjson::list_t& list = jo.getList();
 
-                //std::lock_guard<std::mutex> lock(m_serverMapMutex);
+                // 将配置文件内容加入 搜索树 和 答案表
                 for (const auto& i : list)
                 {
                     m_searchTree->insert(i["question"].getString());
@@ -78,19 +80,31 @@ namespace AutoAnswer
                         return;
                     }
 
+                    // 重载
                     if (args[0] == "reload")
                     {
+                        if (!qqbot::ServerInfo::getPermission().hasUserOperator(senderID))
+                        {
+                            qqbot::Network::sendGroupMessage(groupID, "你没有权限");
+                            return;
+                        }
+
+                        // 写入互斥锁
+                        std::lock_guard<std::shared_mutex> lock(m_mutex);
+                        // 重新加载 搜索树 和 答案表
                         m_searchTree = std::make_shared<SearchTreeLibrary::SearchTree>();
                         m_answerMap.clear();
 
                         try
                         {
+                            // 配置文件
                             std::ifstream infile("./plugin_config/AutoAnswer/config.json");
 
+                            // json object
                             qjson::JObject jo(qjson::JParser::fastParse(infile));
                             const qjson::list_t& list = jo.getList();
 
-                            //std::lock_guard<std::mutex> lock(m_serverMapMutex);
+                            // 将配置文件内容加入 搜索树 和 答案表
                             for (const auto& i : list)
                             {
                                 m_searchTree->insert(i["question"].getString());
@@ -108,6 +122,9 @@ namespace AutoAnswer
                         return;
                     }
 
+                    // 获取问题
+
+                    // 问题
                     std::string question;
                     for (size_t i = 0; i < args.size(); i++)
                     {
@@ -125,18 +142,28 @@ namespace AutoAnswer
                         return;
                     }
 
-                    qqbot::Network::sendGroupMessage(groupID, m_answerMap[m_searchTree->getOriginalString(question)]);
+                    {
+                        // 读取互斥锁
+                        std::shared_lock<std::shared_mutex> lock(m_mutex);
+                        // 获取匹配内容回答
+                        qqbot::Network::sendGroupMessage(groupID, m_answerMap[m_searchTree->getOriginalString(question)]);
+                    }
                     return;
                 },
                 "ask [msg]",
                 "询问问题"
                 );
 
+            // 权限设置为所有人都能用
             qqbot::ServerInfo::getPermission().setGroupDefaultPermission("ask", true);
         }
 
     private:
+        // 模糊搜索树
         std::shared_ptr<SearchTreeLibrary::SearchTree>  m_searchTree;
+        // 问题对应答案表
         std::unordered_map<std::string, std::string>    m_answerMap;
+        // 互斥量
+        mutable std::shared_mutex                       m_mutex;
     };
 }
