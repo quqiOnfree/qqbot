@@ -10,7 +10,9 @@
 #include <mutex>
 #include <queue>
 #include <condition_variable>
+#include <unordered_map>
 #include <asio.hpp>
+#include <Json.h>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
@@ -142,274 +144,436 @@ namespace MCRCON
 		std::string m_buffer;
 	};
 
-	// plugin
-	class MCRCONPlugin : public qqbot::CppPlugin
+	class MCServerRCONClient
 	{
 	public:
 		struct EndPoint
 		{
+			std::string		serverName;
 			std::string		host;
 			unsigned short	port;
 			std::string		password;
 		};
 
-		MCRCONPlugin() :
-			m_mt(static_cast<unsigned int>(std::time(nullptr))),
-			m_coroutineIsRunning(false)
+		MCServerRCONClient() :
+			m_coroutineIsRunning(true),
+			m_serverSocket(m_io_context),
+			m_mt(std::random_device()())
+		{
+			// 线程运行函数
+			auto workfunc = [this]() {
+				while (m_coroutineIsRunning)
+				{
+					{
+						// 协程运行锁
+						std::unique_lock<std::mutex> lock(m_coroutineMutex);
+						// 等待协程启动
+						m_coroutineCV.wait(lock, [&]() {return !m_coroutineIsRunning || m_socketIsRunning; });
+						if (!m_coroutineIsRunning)
+							return;
+						else if (!m_socketIsRunning)
+							continue;
+					}
+
+					// 连接
+					try
+					{
+						m_serverSocket.connect(asio::ip::tcp::endpoint(
+							asio::ip::address::from_string(m_endPoint.host),
+							m_endPoint.port));
+
+						size_t packSize = 0;
+						// 发送包
+						auto sendpack = RCONPackage::makePackage(m_endPoint.password, 3, m_mt(), packSize);
+						m_serverSocket.send(asio::buffer(RCONPackage::packToString(sendpack, packSize)));
+
+						Package<int> package;
+						char dataBuffer[8192]{ 0 };
+						do
+						{
+							size_t n = m_serverSocket.read_some(asio::buffer(dataBuffer));
+							package.write(std::string(dataBuffer, n));
+						} while (!package.canRead());
+
+						// 接收包
+						auto recvpack = RCONPackage::stringToPack(package.read());
+						if (recvpack->type != 2)
+							throw std::runtime_error("password is invalid");
+					}
+					catch (...)
+					{
+						m_socketIsRunning = false;
+						m_coroutineCV.notify_all();
+						continue;
+					}
+
+					m_coroutineIsRunning = true;
+					m_socketIsRunning = true;
+					m_coroutineCV.notify_all();
+
+					// 接收数据
+					char dataBuffer[8192]{ 0 };
+					Package<int> package;
+					while (m_socketIsRunning)
+					{
+						try
+						{
+							// 发送消息
+							{
+								std::unique_lock<std::mutex> lock(m_queueMutex);
+								m_queueCV.wait(lock,
+									[&]() {return !m_coroutineIsRunning || !m_socketIsRunning || !m_queue.empty(); });
+								if (!m_coroutineIsRunning)
+									return;
+								else if (!m_socketIsRunning)
+									break;
+
+								if (!m_queue.empty())
+								{
+									auto [requestID, command] = m_queue.front();
+									m_queue.pop();
+									size_t packSize = 0;
+									auto pack = RCONPackage::makePackage(command, 2, requestID, packSize);
+									m_serverSocket.send(asio::buffer(RCONPackage::packToString(pack, packSize)));
+								}
+							}
+
+							// 接收消息
+							do
+							{
+								size_t n = m_serverSocket.read_some(asio::buffer(dataBuffer));
+								package.write(std::string(dataBuffer, n));
+							} while (!package.canRead());
+
+							{
+								while (package.canRead())
+								{
+									auto pack = RCONPackage::stringToPack(package.read());
+
+									if (pack->requestID == -1)
+									{
+										std::cout << ERROR_WITH_STACKTRACE("requestID is -1") << '\n';
+										continue;
+									}
+
+									std::unique_lock<std::mutex> lock(m_mapMutex);
+									long long groupId = m_requestIDMap[pack->requestID];
+
+									std::string buffer(pack->data, pack->getDataSize(pack));
+									std::string restr;
+
+									for (const auto& i : buffer)
+									{
+										if (i == '/')
+											restr += '\n' + i;
+										else
+											restr += i;
+									}
+
+									qqbot::Network::sendGroupMessage(groupId,
+										std::format("[{}]{}", m_endPoint.serverName, restr));
+									m_requestIDMap.erase(pack->requestID);
+								}
+							}
+						}
+						catch (...)
+						{
+							m_socketIsRunning = false;
+							break;
+						}
+					}
+				}
+				};
+
+			// 运行线程
+			m_workThread = std::thread(workfunc);
+			std::thread([this]() {m_io_context.run(); }).detach();
+		}
+
+		MCServerRCONClient(const MCServerRCONClient&) = delete;
+		MCServerRCONClient(MCServerRCONClient&&) = delete;
+
+		~MCServerRCONClient()
+		{
+			stop();
+		}
+
+		MCServerRCONClient& operator=(const MCServerRCONClient&) = delete;
+		MCServerRCONClient& operator=(MCServerRCONClient&&) = delete;
+
+		void setEndPoint(const EndPoint& ep)
+		{
+			if (m_socketIsRunning)
+				throw std::runtime_error("it can't be set to new EndPoint");
+			m_endPoint = ep;
+		}
+
+		// 发送command到rcon
+		void postRequest(long long groupID, const std::string& command)
+		{
+			if (!m_socketIsRunning)
+				throw std::runtime_error("you can't post the request because socket is closed");
+
+			int requestId = std::abs(static_cast<int>(m_mt())) % 1000000000;
+			while (m_requestIDMap.find(requestId) != m_requestIDMap.end())
+			{
+				requestId = std::abs(static_cast<int>(m_mt())) % 1000000000;
+			}
+
+			{
+				std::unique_lock<std::mutex> lock(m_mapMutex);
+				m_requestIDMap[requestId] = groupID;
+			}
+			{
+				std::unique_lock<std::mutex> lock(m_queueMutex);
+				m_queue.push({ requestId ,command });
+				m_queueCV.notify_all();
+			}
+		}
+
+		void run()
+		{
+			if (m_socketIsRunning)
+				throw std::runtime_error("socket is running");
+
+			m_socketIsRunning = true;
+			m_coroutineCV.notify_all();
+			std::unique_lock<std::mutex> lock(m_coroutineMutex);
+			m_coroutineCV.wait(lock);
+			if (!m_socketIsRunning)
+				throw std::runtime_error("socket can't be opened");
+		}
+
+		void stop()
+		{
+			m_coroutineIsRunning = false;
+			m_socketIsRunning = false;
+			try
+			{
+				m_serverSocket.close();
+			}
+			catch (...) {}
+
+			m_coroutineCV.notify_all();
+			m_queueCV.notify_all();
+			
+			if (m_workThread.joinable())
+				m_workThread.join();
+		}
+
+		bool isRunning() const
+		{
+			return static_cast<bool>(m_socketIsRunning);
+		}
+
+	private:
+		asio::io_context								m_io_context;
+		asio::ip::tcp::socket							m_serverSocket;
+		EndPoint										m_endPoint;
+		std::mt19937									m_mt;
+
+		std::atomic<bool>								m_coroutineIsRunning;
+		std::atomic<bool>								m_socketIsRunning;
+		std::thread										m_workThread;
+
+		std::mutex										m_coroutineMutex;
+		std::condition_variable							m_coroutineCV;
+
+		std::mutex										m_queueMutex;
+		std::queue<std::pair<int, std::string>>			m_queue;
+		std::condition_variable							m_queueCV;
+
+		std::mutex										m_mapMutex;
+		std::unordered_map<int, long long>				m_requestIDMap;
+	};
+
+	class MCRCONPlugin : public qqbot::CppPlugin
+	{
+	public:
+		MCRCONPlugin()
 		{
 			qqbot::CppPlugin::pluginInfo.author = "quqiOnfree";
 			qqbot::CppPlugin::pluginInfo.name = "mcrcon";
 			qqbot::CppPlugin::pluginInfo.version = "0.0.1";
 
-			//赋值
-			m_endPoint = { "192.168.1.3", 25575, "123456" };
-			m_requestID = m_mt() % 1000000000;
+			{
+				std::ifstream infile("./plugin_config/mcrcon/config.json");
+				if (!infile)
+				{
+					createConfig();
+				}
+			}
+
+			try
+			{
+				std::ifstream infile("./plugin_config/mcrcon/config.json");
+
+				qjson::JObject jo(qjson::JParser::fastParse(infile));
+				const qjson::dict_t& dict = jo.getDict();
+
+				//std::lock_guard<std::mutex> lock(m_serverMapMutex);
+				for (const auto& [serverName, localjo] : dict)
+				{
+					m_serverMap[serverName] = std::make_shared<MCServerRCONClient>();
+					m_serverMap[serverName]->setEndPoint({
+						serverName,
+						localjo["host"].getString(),
+						static_cast<unsigned short>(localjo["port"].getInt()),
+						localjo["password"].getString()});
+				}
+			}
+			catch (const std::exception& e)
+			{
+				std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+			}
+
+			//m_serverMap["a"] = std::make_shared<MCServerRCONClient>();
+			//m_serverMap["a"]->setEndPoint({ "a", "192.168.1.3", 25575, "123456" });
 		}
 
-		~MCRCONPlugin() = default;
+		void createConfig()
+		{
+			std::filesystem::create_directory("./plugin_config/mcrcon");
+			qjson::JObject jo;
+			jo["lobby"]["host"] = "192.168.1.3";
+			jo["lobby"]["port"] = 25575;
+			jo["lobby"]["password"] = "123456";
+			std::ofstream outfile("./plugin_config/mcrcon/config.json");
+			outfile << qjson::JWriter::fastFormatWrite(jo);
+		}
 
 		virtual void onEnable()
 		{
 			qqbot::ServerInfo::getCommander().addCommand("rcon",
-				[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
-				{
-					if (Args.empty())
+				[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> args) {
+					if (args.empty())
 					{
-						qqbot::Network::sendGroupMessage(groupID, "rcon command [command] -发送指令");
+						qqbot::Network::sendGroupMessage(groupID,
+							"rcon [serverName] command [command]\n"
+							"rcon [serverName] connect\n"
+							"rcon list\n"
+							"rcon reload\n"
+						);
 						return;
 					}
 
-					if (Args.size() == 1)
+					if (args.size() == 1)
 					{
-						if (Args[0] == "connect")
+						if (args[0] == "list")
 						{
-							static bool hasStart = false;
-							if (m_coroutineIsRunning || hasStart)
+							std::lock_guard<std::mutex> lock(m_serverMapMutex);
+							std::string restr;
+							for (const auto& [serverName, server] : m_serverMap)
 							{
-								qqbot::Network::sendGroupMessage(groupID, "连接RCON服务器协程已经在运作");
-								return;
+								restr += serverName + ',';
 							}
-							this->connect();
-							hasStart = true;
-							qqbot::Network::sendGroupMessage(groupID, "连接RCON服务器协程启动成功");
+							qqbot::Network::sendGroupMessage(groupID, std::format("RCON list: \n[{}]", restr));
+							return;
 						}
-						/*else if (Args[0] == "disconnect")
+						else if (args[0] == "reload")
 						{
-							if (!m_coroutineIsRunning)
+							std::ifstream infile("./plugin_config/mcrcon/config.json");
+							if (!infile)
 							{
-								qqbot::Network::sendGroupMessage(groupID, "连接RCON服务器协程已经停止");
+								qqbot::Network::sendGroupMessage(groupID, "无法打开配置文件 (./plugin_config/mcrcon/config.json)");
 								return;
 							}
-							this->disconnect();
-							qqbot::Network::sendGroupMessage(groupID, "连接RCON服务器协程终止成功");
-						}*/
-						else if (Args[0] == "state")
-						{
-							if (m_coroutineIsRunning)
+
+							try
 							{
-								qqbot::Network::sendGroupMessage(groupID, "RCON服务器协程正在运作");
-								return;
+								{
+									std::unique_lock<std::mutex> lock(m_serverMapMutex);
+									while (!m_serverMap.empty())
+									{
+										m_serverMap.erase(m_serverMap.begin());
+									}
+								}
+
+								qjson::JObject jo(qjson::JParser::fastParse(infile));
+								const qjson::dict_t& dict = jo.getDict();
+
+								std::lock_guard<std::mutex> lock(m_serverMapMutex);
+								for (const auto& [serverName, localjo] : dict)
+								{
+									m_serverMap[serverName] = std::make_shared<MCServerRCONClient>();
+									m_serverMap[serverName]->setEndPoint({
+										serverName,
+										localjo["host"].getString(),
+										static_cast<unsigned short>(localjo["port"].getInt()),
+										localjo["password"].getString() });
+								}
+
+								qqbot::Network::sendGroupMessage(groupID, "successfully reload");
 							}
-							else
+							catch (const std::exception& e)
 							{
-								qqbot::Network::sendGroupMessage(groupID, "RCON服务器协程已停止");
-								return;
+								std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+								qqbot::Network::sendGroupMessage(groupID, e.what());
 							}
 						}
 						else
 						{
-							qqbot::Network::sendGroupMessage(groupID, "参数错误");
+							qqbot::Network::sendGroupMessage(groupID, "命令参数错误");
 							return;
 						}
+						return;
 					}
-					else if (Args[0] == "command")
+
+					if (m_serverMap.find(args[0]) == m_serverMap.end())
 					{
-						if (!m_coroutineIsRunning)
+						qqbot::Network::sendGroupMessage(groupID, "invalid");
+						return;
+					}
+
+					// server名
+					std::string& serverName = args[0];
+					if (args.size() >= 2)
+					{
+						if (args[1] == "connect")
 						{
-							qqbot::Network::sendGroupMessage(groupID, "连接RCON服务器协程不在运作，可能是：\n1. 没有连接到RCON服务器\n2. RCON服务器密码错误");
+							try
+							{
+								//std::lock_guard<std::mutex> lock(m_serverMapMutex);
+								m_serverMap[serverName]->run();
+								qqbot::Network::sendGroupMessage(groupID, "open rcon successful!");
+								return;
+							}
+							catch (const std::exception& e)
+							{
+								std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+								qqbot::Network::sendGroupMessage(groupID, e.what());
+								return;
+							}
+						}
+						else if (args[1] == "command")
+						{
+							std::string command;
+							for (size_t i = 2; i < args.size(); i++)
+							{
+								if (i == args.size() - 1)
+									command += args[i];
+								else
+									command += args[i] + ' ';
+							}
+
+							//std::lock_guard<std::mutex> lock(m_serverMapMutex);
+							m_serverMap[serverName]->postRequest(groupID, command);
+						}
+						else
+						{
+							qqbot::Network::sendGroupMessage(groupID, "没有此指令");
 							return;
 						}
-
-						//定时器指令
-						std::string taskName;
-
-						for (auto i = Args.begin() + 1; i != Args.end(); i++)
-						{
-							if (i + 1 != Args.end())
-								taskName += *i + ' ';
-							else
-								taskName += *i;
-						}
-
-						std::unique_lock<std::mutex> lock(m_mutex);
-						m_queue.push({ groupID, taskName });
-						m_cv.notify_all();
 					}
 				},
 				"rcon command [command]",
-				"发送指令"
-				);
-
-			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("rcon", false);
+				"发送指令");
 		}
 
-	protected:
-		//异步获取命令和对应的群聊
-		template<asio::completion_token_for<void(std::pair<long long, std::string>)> CompletionToken>
-		auto async_get_command(CompletionToken&& token)
-		{
-			auto func = [&]() -> std::pair<long long, std::string> {
-				std::unique_lock<std::mutex> lock(m_mutex);
-
-				for (;;)
-				{
-					m_cv.wait(lock, [&]() {return !m_queue.empty(); });
-
-					if (!m_queue.empty())
-					{
-						long long groupID = m_queue.front().first;
-						std::string command = m_queue.front().second;
-						m_queue.pop();
-						return { groupID, command };
-					}
-				}
-			};
-
-			return asio::async_initiate<CompletionToken, void(std::pair<long long, std::string>)>([func]
-			(asio::completion_handler_for<void(std::pair<long long, std::string>)> auto handler) {
-					// 放置一个空的追踪任务, 防止executor以为当前没有任务而退出
-					auto work = asio::make_work_guard(handler);
-					asio::dispatch(work.get_executor(), [func, handler = std::move(handler)]() mutable {
-						// 结束追踪任务 返回回调结果
-						std::move(handler)(func());
-						});
-				}, token);
-		}
-
-		void connect()
-		{
-			asio::co_spawn(m_io_context, [this]() -> asio::awaitable<void> {
-
-				//将运行设置为true
-				m_coroutineIsRunning = true;
-
-				using namespace asio;
-
-				auto executor = co_await this_coro::executor;
-
-				ip::tcp::endpoint endpoint(ip::make_address(m_endPoint.host), m_endPoint.port);
-				
-
-				long long groupID = 0;
-				std::string command;
-
-				while (m_coroutineIsRunning)
-				{
-					try
-					{
-						ip::tcp::socket socket(m_io_context);
-
-						co_await socket.async_connect(endpoint, use_awaitable);
-
-						//登录
-						{
-							size_t packSize = 0;
-							auto pack = RCONPackage::makePackage(m_endPoint.password, 3, m_requestID, packSize);
-
-							co_await async_write(socket, buffer(RCONPackage::packToString(pack, packSize)), use_awaitable);
-						}
-
-						//获取是否登录成功
-						{
-							char dataBuffer[1024]{ 0 };
-
-							size_t n = co_await socket.async_read_some(buffer(dataBuffer), use_awaitable);
-
-							if (!n)
-								throw THROW_ERROR("无法接收数据");
-
-							auto pack = RCONPackage::stringToPack(std::string(dataBuffer, n));
-
-							if (pack->requestID != m_requestID)
-								throw THROW_ERROR("RCON密码错误");
-						}
-
-						//发送命令
-						while (m_coroutineIsRunning)
-						{
-							std::pair<long long, std::string> get = co_await async_get_command(use_awaitable);
-							groupID = get.first;
-							command = get.second;
-
-							size_t packSize = 0;
-							auto pack = RCONPackage::makePackage(command, 2, m_requestID, packSize);
-
-							co_await async_write(socket, buffer(RCONPackage::packToString(pack, packSize)), use_awaitable);
-
-							//返回数据
-
-							Package<int> package;
-							do
-							{
-								char dataBuffer[8192]{ 0 };
-								size_t n = co_await socket.async_read_some(buffer(dataBuffer), use_awaitable);
-								package.write(std::string(dataBuffer, n));
-							} while (!package.canRead());
-
-							std::string result;
-							int n = package.firstMsgLength();
-							auto repack = RCONPackage::stringToPack(package.read());
-							std::string data(repack->data, RCONPackage::getDataSize(repack));
-
-							if (data.empty())
-							{
-								qqbot::Network::sendGroupMessage(groupID, "true");
-								continue;
-							}
-
-							for (char& i : data)
-							{
-								if (i == '/')
-								{
-									result += "\n/";
-								}
-								else
-								{
-									result += i;
-								}
-							}
-
-							qqbot::Network::sendGroupMessage(groupID, result);
-						}
-					}
-					catch (const std::exception& e)
-					{
-						qqbot::Network::sendGroupMessage(groupID, std::format("无法发送指令：{}", e.what()));
-						std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
-					}
-				}
-				co_return;
-				},
-				asio::detached);
-
-			std::thread([&]() {m_io_context.run(); }).detach();
-		}
-
-		void disconnect()
-		{
-			m_coroutineIsRunning = false;
-			m_io_context.stop();
-		}
+		virtual ~MCRCONPlugin() = default;
 
 	private:
-		asio::io_context		m_io_context;
-		EndPoint				m_endPoint;
-		int						m_requestID;
-		std::mt19937			m_mt;
-		std::atomic<bool>		m_coroutineIsRunning;
-
-		std::mutex				m_mutex;
-		std::queue<std::pair<long long, std::string>> m_queue;
-		std::condition_variable m_cv;
+		std::mutex																m_serverMapMutex;
+		std::unordered_map<std::string, std::shared_ptr<MCServerRCONClient>>	m_serverMap;
 	};
 }

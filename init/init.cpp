@@ -57,6 +57,8 @@ namespace qqbot
 		}
 		std::cout << std::format("成功连接至go-cqhttp({}:{})\n", permission.m_gocq_ip, permission.m_gocq_port);
 
+		std::filesystem::create_directory("./plugin_config");
+
 		//插件注册
 		try
 		{
