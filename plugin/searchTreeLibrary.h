@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 #include <set>
+#include <string>
+#include <string_view>
 
 namespace SearchTreeLibrary
 {
@@ -22,7 +24,7 @@ namespace SearchTreeLibrary
 			}
 		}
 
-		std::string getOriginalString(const std::string& data)
+		std::string getOriginalString(const std::string& data) const
 		{
 			if (data.empty())
 			{
@@ -30,7 +32,11 @@ namespace SearchTreeLibrary
 			}
 
 			std::set<size_t> locSet;
-			locSet = m_tree[data[0]];
+			size_t i = 0;
+			while (data.size() > i && m_tree.find(data[i++]) == m_tree.end()) {}
+			if (m_tree.find(data[i - 1]) == m_tree.end())
+				throw std::exception("can't find this question");
+			locSet = m_tree.find(data[i - 1])->second;
 
 			for (auto i = data.begin() + 1; i != data.end(); i++)
 			{
@@ -38,7 +44,7 @@ namespace SearchTreeLibrary
 
 				for (auto j = locSet_2.begin(); j != locSet_2.end(); j++)
 				{
-					if (m_tree[*i].find(*j) == m_tree[*i].end())
+					if (m_tree.find(*i)->second.find(*j) == m_tree.find(*i)->second.end())
 					{
 						locSet.erase(*j);
 					}
