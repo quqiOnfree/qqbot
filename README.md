@@ -5,7 +5,6 @@
 
 ## 依赖
 ### 前置依赖
-- [JsonParser](https://github.com/quqiOnfree/JsonParser)
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 - [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
 - [asio](https://github.com/chriskohlhoff/asio)
