@@ -23,7 +23,7 @@ namespace Divination
 			qqbot::CppPlugin::pluginInfo.version = "0.0.1";
 		}
 
-		~DivinationPlugin() = default;
+		virtual ~DivinationPlugin() = default;
 
 		virtual void onEnable()
 		{

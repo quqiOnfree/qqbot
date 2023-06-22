@@ -22,7 +22,7 @@ namespace MIL
 			qqbot::CppPlugin::pluginInfo.version = "0.0.1";
 		}
 
-		~MILPlugin() = default;
+		virtual ~MILPlugin() = default;
 
 		virtual void onEnable()
 		{

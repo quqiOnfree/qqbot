@@ -21,7 +21,7 @@ namespace GroupOperator
 			qqbot::CppPlugin::pluginInfo.version = "0.0.1";
 		}
 
-		~GroupOperatorPlugin() = default;
+		virtual ~GroupOperatorPlugin() = default;
 
 		virtual void onEnable()
 		{

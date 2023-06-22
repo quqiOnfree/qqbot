@@ -129,7 +129,7 @@ namespace Weather
 			qqbot::CppPlugin::pluginInfo.version = "0.0.1";
 		}
 
-		~WeatherPlugin() = default;
+		virtual ~WeatherPlugin() = default;
 
 		virtual void onLoad()
 		{
