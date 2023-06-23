@@ -5,6 +5,8 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("qqbot")
 
+set(OPENSSL_ROOT_DIR ${CMAKE_SOURCE_DIR})
+
 file(
 	GLOB INCLUDEFILE
 	"${CMAKE_SOURCE_DIR}/include/*.h"
