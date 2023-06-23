@@ -1,7 +1,7 @@
-﻿# QQ机器人
+# QQ机器人
 ## 介绍
 - 这个QQ机器人拥有插件系统，可以轻松扩展
-- 语言：C++
+- 语言：C++23
 
 ## 依赖
 ### 前置依赖
@@ -154,3 +154,8 @@ namespace qqbot
 }
 
 ```
+## 开发此qqbot
+### qqbot的各种系统及API
+- 权限系统 [Permission System](./doc/permission.md)
+- 命令系统 [Command System](./doc/command.md)
+- 插件系统 [Plugin System](./doc/plugin.md)
