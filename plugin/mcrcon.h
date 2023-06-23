@@ -34,7 +34,7 @@ namespace MCRCON
 		{
 			size_t packSize = sizeof(int) * 3ll + data.size() + 2ll;
 
-			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
+			std::shared_ptr<RCONPackage> localPack(
 				reinterpret_cast<RCONPackage*>(
 					new char[packSize] {0}));
 
@@ -60,7 +60,7 @@ namespace MCRCON
 			if (data.size() < sizeof(RCONPackage) - 2)
 				throw THROW_ERROR("Data is too small.");
 
-			std::shared_ptr<RCONPackage> localPack = std::shared_ptr<RCONPackage>(
+			std::shared_ptr<RCONPackage> localPack(
 				reinterpret_cast<RCONPackage*>(
 					new char[data.size()] {0}));
 

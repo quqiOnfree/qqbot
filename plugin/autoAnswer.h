@@ -10,7 +10,6 @@
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
 #include "network.h"
-#include "QuqiCoro.hpp"
 #include "searchTreeLibrary.h"
 #include "definition.h"
 
@@ -43,6 +42,10 @@ namespace AutoAnswer
                 // 将配置文件内容加入 搜索树 和 答案表
                 for (const auto& i : list)
                 {
+                    // 如果关键词重复则报错
+                    if (m_answerMap.find(i["question"].getString()) != m_answerMap.end())
+                        throw std::logic_error("问题关键词重复");
+
                     m_searchTree->insert(i["question"].getString());
                     m_answerMap[i["question"].getString()] = i["answer"].getString();
                 }
@@ -59,9 +62,15 @@ namespace AutoAnswer
         {
             std::filesystem::create_directory("./plugin_config/AutoAnswer");
             qjson::JObject jo, localjo;
+
             localjo["question"] = "How are you?";
             localjo["answer"] = "I'm fine, thank you.";
             jo.push_back(localjo);
+
+            localjo["question"] = "你是谁";
+            localjo["answer"] = "我是qqbot, github地址: https://github.com/quqiOnfree/qqbot";
+            jo.push_back(localjo);
+
             std::ofstream outfile("./plugin_config/AutoAnswer/config.json");
             outfile << qjson::JWriter::fastFormatWrite(jo);
         }
@@ -107,6 +116,10 @@ namespace AutoAnswer
                             // 将配置文件内容加入 搜索树 和 答案表
                             for (const auto& i : list)
                             {
+                                // 如果关键词重复则报错
+                                if (m_answerMap.find(i["question"].getString()) != m_answerMap.end())
+                                    throw std::logic_error("问题关键词重复");
+
                                 m_searchTree->insert(i["question"].getString());
                                 m_answerMap[i["question"].getString()] = i["answer"].getString();
                             }
