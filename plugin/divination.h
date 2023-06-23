@@ -16,7 +16,7 @@ namespace Divination
 	class DivinationPlugin : public qqbot::CppPlugin
 	{
 	public:
-		DivinationPlugin() : m_mt(time(nullptr))
+		DivinationPlugin() : m_mt(std::random_device()())
 		{
 			qqbot::CppPlugin::pluginInfo.author = "quqiOnfree";
 			qqbot::CppPlugin::pluginInfo.name = "Divination";

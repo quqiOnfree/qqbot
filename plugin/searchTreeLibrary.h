@@ -4,6 +4,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <stdexcept>
 
 namespace SearchTreeLibrary
 {
@@ -14,6 +15,7 @@ namespace SearchTreeLibrary
 		SearchTree() = default;
 		~SearchTree() = default;
 
+		// 加入
 		void insert(const std::string& data)
 		{
 			m_strings.push_back(data);
@@ -24,11 +26,12 @@ namespace SearchTreeLibrary
 			}
 		}
 
+		// 获取模糊搜索的匹配字符串
 		std::string getOriginalString(const std::string& data) const
 		{
 			if (data.empty())
 			{
-				throw std::exception("data is empty");
+				throw std::logic_error("data is empty");
 			}
 
 			std::set<size_t> locSet;
@@ -107,12 +110,14 @@ namespace SearchTreeLibrary
 				}
 				else
 				{
-					throw std::exception("找不到此地点");
+					throw std::logic_error("找不到此地点");
 				}
 			}
 		}
 	private:
-		std::unordered_map<char, std::set<size_t>> m_tree;
-		std::vector<std::string> m_strings;
+		// 搜索树本体
+		std::unordered_map<char, std::set<size_t>>	m_tree;
+		// 匹配字符串
+		std::vector<std::string>					m_strings;
 	};
 }
