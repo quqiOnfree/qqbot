@@ -47,7 +47,7 @@ namespace SearchTreeLibrary
 
 				for (auto j = locSet_2.begin(); j != locSet_2.end(); j++)
 				{
-					if (m_tree.find(*i)->second.find(*j) == m_tree.find(*i)->second.end())
+					if (m_tree.find(*i) == m_tree.end() || m_tree.find(*i)->second.find(*j) == m_tree.find(*i)->second.end())
 					{
 						locSet.erase(*j);
 					}
