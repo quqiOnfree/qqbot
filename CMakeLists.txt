@@ -74,6 +74,8 @@ if (MSVC)
 endif(MSVC)
 
 #openssl支持
+set(OPENSSL_ROOT_DIR ${CMAKE_SOURCE_DIR})
+
 find_package(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
     set(HTTPLIB_IS_USING_OPENSSL TRUE)
