@@ -206,6 +206,11 @@ R"({}省{}的天气：
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("tq", true);
 		}
 
+		virtual void onDisable()
+		{
+			qqbot::ServerInfo::getCommander().removeCommand("tq", true);
+		}
+
 	private:
 		static std::unordered_map<std::string, std::unordered_map<std::string, std::string>> m_cityCode;
 		static SearchTreeLibrary::SearchTree m_searchTree;

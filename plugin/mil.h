@@ -81,5 +81,10 @@ namespace MIL
 
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("mil", true);
 		}
+
+		virtual void onDisable()
+		{
+			qqbot::ServerInfo::getCommander().removeCommand("mil", true);
+		}
 	};
 }

@@ -570,6 +570,11 @@ namespace MCRCON
 				"发送指令");
 		}
 
+		virtual void onDisable()
+		{
+			qqbot::ServerInfo::getCommander().removeCommand("rcon", true);
+		}
+
 		virtual ~MCRCONPlugin() = default;
 
 	private:

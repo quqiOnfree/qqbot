@@ -171,6 +171,11 @@ namespace AutoAnswer
             qqbot::ServerInfo::getPermission().setGroupDefaultPermission("ask", true);
         }
 
+        virtual void onDisable()
+        {
+            qqbot::ServerInfo::getCommander().removeCommand("ask", true);
+        }
+
     private:
         // 模糊搜索树
         std::shared_ptr<SearchTreeLibrary::SearchTree>  m_searchTree;

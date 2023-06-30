@@ -2,9 +2,6 @@
 
 #include <string>
 
-#include "command.h"
-#include "permission.h"
-
 namespace qqbot
 {
 	struct PluginInfo
@@ -30,19 +27,13 @@ namespace qqbot
 		CppPlugin& operator =(const CppPlugin&) = delete;
 
 		//插件加载
-		virtual void onLoad()
-		{
-		}
+		virtual void onLoad() {}
 
 		//插件启动
-		virtual void onEnable()
-		{
-		}
+		virtual void onEnable() {}
 
 		//插件关闭
-		virtual void onDisable()
-		{
-		}
+		virtual void onDisable() {}
 
 	public:
 		//插件信息

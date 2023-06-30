@@ -185,6 +185,12 @@ namespace GroupOperator
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("mute", false);
 		}
 
+		virtual void onDisable()
+		{
+			qqbot::ServerInfo::getCommander().removeCommand("kick", true);
+			qqbot::ServerInfo::getCommander().removeCommand("mute", true);
+		}
+
 	private:
 		httplib::Result groupGet(const std::string& command, std::initializer_list<std::pair<std::string, std::string>> list)
 		{
