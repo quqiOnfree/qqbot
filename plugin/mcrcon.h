@@ -211,9 +211,6 @@ namespace MCRCON
 					m_socketIsRunning = true;
 					m_coroutineCV.notify_all();
 
-					// 接收数据
-					char dataBuffer[8192]{ 0 };
-					Package<int> package;
 					while (m_socketIsRunning)
 					{
 						try
@@ -237,7 +234,37 @@ namespace MCRCON
 									m_serverSocket.send(asio::buffer(RCONPackage::packToString(pack, packSize)));
 								}
 							}
+						}
+						catch (...)
+						{
+							m_socketIsRunning = false;
+							break;
+						}
+					}
+				}
+				};
 
+			auto receiveFunc = [&]() {
+				while (m_coroutineIsRunning)
+				{
+					char dataBuffer[8192]{ 0 };
+					Package<int> package;
+
+					while (m_socketIsRunning)
+					{
+						{
+							// 协程运行锁
+							std::unique_lock<std::mutex> lock(m_coroutineMutex);
+							// 等待协程启动
+							m_coroutineCV.wait(lock, [&]() {return !m_coroutineIsRunning || m_socketIsRunning; });
+							if (!m_coroutineIsRunning)
+								return;
+							else if (!m_socketIsRunning)
+								continue;
+						}
+
+						try
+						{
 							// 接收消息
 							do
 							{
@@ -260,19 +287,29 @@ namespace MCRCON
 									long long groupId = m_requestIDMap[pack->requestID];
 
 									std::string buffer(pack->data, pack->getDataSize(pack));
+
+									if (buffer.empty() || !buffer[0])
+									{
+										qqbot::Network::sendGroupMessage(groupId,
+											std::format("[{}]true", m_endPoint.serverName));
+										return;
+									}
+
 									std::string restr;
 
-									for (const auto& i : buffer)
+									for (auto i = buffer.begin(); i != buffer.end(); i++)
 									{
-										if (i == '/')
-											restr += '\n' + i;
+										if (*i == '/')
+											restr += '\n' + *i;
+										else if ((*i == "§"[0] && (i + 1) != buffer.end() && *(i + 1) == "§"[1]) || *i == '&')
+											i += 2;
 										else
-											restr += i;
+											restr += *i;
 									}
 
 									qqbot::Network::sendGroupMessage(groupId,
 										std::format("[{}]{}", m_endPoint.serverName, restr));
-									m_requestIDMap.erase(pack->requestID);
+									// m_requestIDMap.erase(pack->requestID);
 								}
 							}
 						}
@@ -287,6 +324,7 @@ namespace MCRCON
 
 			// 运行线程
 			m_workThread = std::thread(workfunc);
+			m_receiveThread = std::thread(receiveFunc);
 			std::thread([this]() {m_io_context.run(); }).detach();
 		}
 
@@ -375,6 +413,7 @@ namespace MCRCON
 		std::atomic<bool>								m_coroutineIsRunning;
 		std::atomic<bool>								m_socketIsRunning;
 		std::thread										m_workThread;
+		std::thread										m_receiveThread;
 
 		std::mutex										m_coroutineMutex;
 		std::condition_variable							m_coroutineCV;

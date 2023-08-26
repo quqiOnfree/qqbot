@@ -480,6 +480,8 @@ namespace qqbot
 	{
 		//只允许移动，不允许复制
 		m_permission = command.m_permission;
+		m_register = command.m_register;
+		command.m_register = nullptr;
 		command.m_permission = nullptr;
 	}
 
@@ -490,7 +492,9 @@ namespace qqbot
 			return *this;
 
 		m_permission = command.m_permission;
+		m_register = command.m_register;
 		command.m_permission = nullptr;
+		command.m_register = nullptr;
 		return *this;
 	}
 
