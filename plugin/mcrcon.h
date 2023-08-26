@@ -247,22 +247,22 @@ namespace MCRCON
 			auto receiveFunc = [&]() {
 				while (m_coroutineIsRunning)
 				{
+					{
+						// 协程运行锁
+						std::unique_lock<std::mutex> lock(m_coroutineMutex);
+						// 等待协程启动
+						m_coroutineCV.wait(lock, [&]() {return !m_coroutineIsRunning || m_socketIsRunning; });
+						if (!m_coroutineIsRunning)
+							return;
+						else if (!m_socketIsRunning)
+							continue;
+					}
+
 					char dataBuffer[8192]{ 0 };
 					Package<int> package;
 
 					while (m_socketIsRunning)
 					{
-						{
-							// 协程运行锁
-							std::unique_lock<std::mutex> lock(m_coroutineMutex);
-							// 等待协程启动
-							m_coroutineCV.wait(lock, [&]() {return !m_coroutineIsRunning || m_socketIsRunning; });
-							if (!m_coroutineIsRunning)
-								return;
-							else if (!m_socketIsRunning)
-								continue;
-						}
-
 						try
 						{
 							// 接收消息
