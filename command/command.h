@@ -4,8 +4,10 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <shared_mutex>
 
 #include "permission.h"
+#include "register.h"
 
 namespace qqbot
 {
@@ -22,7 +24,7 @@ namespace qqbot
 
 	public:
 		Command() = delete;
-		Command(qqbot::Permission* permission);
+		Command(qqbot::Permission* permission, qqbot::Register* reg);
 		Command(const Command&) = delete;
 		Command(Command&& command) noexcept;
 		~Command();
@@ -41,6 +43,10 @@ namespace qqbot
 			UserHandler handler,
 			const std::string& commandFormat,
 			const std::string& description);
+
+		//删除指令
+		//isGroup为true则删除群指令，否则删除私聊指令
+		void removeCommand(const std::string& commandName, bool isGroup);
 
 		//群消息处理
 		void groupExcute(long long groupID,
@@ -63,6 +69,8 @@ namespace qqbot
 		std::unordered_map<std::string, UserHandler>	m_UserHandlers;
 		std::unordered_map<std::string, std::string>	m_userCommandDescriptions;
 		std::unordered_map<std::string, std::string>	m_userCommandFormats;
+		std::shared_mutex								m_shareMutex;
 		qqbot::Permission*								m_permission;
+		qqbot::Register*								m_register;
 	};
 }

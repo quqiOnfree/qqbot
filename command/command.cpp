@@ -9,8 +9,6 @@
 #include "timer.h"
 #include "definition.h"
 
-extern qqbot::Register pluginRegister;
-
 namespace qqbot
 {
 	Command::~Command()
@@ -18,10 +16,11 @@ namespace qqbot
 		m_permission = nullptr;
 	}
 
-	Command::Command(qqbot::Permission* permission)
+	Command::Command(qqbot::Permission* permission, qqbot::Register* reg)
 	{
 		//初始化
 		m_permission = permission;
+		m_register = reg;
 
 		//添加permission的函数,因为permission没有自定义的函数 :(
 		this->addCommand("permission",
@@ -174,18 +173,30 @@ namespace qqbot
 			{
 				if (Args.empty())
 				{
-					qqbot::Network::sendGroupMessage(groupID, "plugin list -插件列表");
+					qqbot::Network::sendGroupMessage(groupID,
+						"plugin list -插件列表\n"
+						"plugin reload [pluginName] -重载插件\n"
+					);
 				}
 				else if (Args.size() == 1)
 				{
 					if (Args[0] == "list")
 					{
+						//输出数据
 						std::string outString;
-						const auto& plugins = pluginRegister.getPlugins();
+						//读取锁
+						std::shared_lock<std::shared_mutex> lock(m_shareMutex);
+						const auto& plugins = m_register->getPlugins();
 
 						for (auto const& [pluginName, plugin] : plugins)
 						{
-							outString += std::format("-----------------------\n[{}]\nAuthor: {}\nVersion: {}\n", pluginName, plugin->pluginInfo.author, plugin->pluginInfo.version);
+							outString += std::format(
+								"-----------------------\n"
+								"[{}]\n"
+								"Author: {}\n"
+								"Version: {}\n",
+								pluginName, plugin->pluginInfo.author,
+								plugin->pluginInfo.version);
 						}
 
 						qqbot::Network::sendGroupMessage(groupID, outString);
@@ -193,7 +204,35 @@ namespace qqbot
 					else
 					{
 						qqbot::Network::sendGroupMessage(groupID, "参数错误");
+						return;
 					}
+				}
+				else if (Args.size() == 2)
+				{
+					if (Args[0] == "reload")
+					{
+						if (m_register->getPlugins().find(Args[1]) == m_register->getPlugins().end())
+						{
+							qqbot::Network::sendGroupMessage(groupID, "找不到此插件");
+							return;
+						}
+						
+						//互斥锁
+						std::lock_guard<std::shared_mutex> lock(m_shareMutex);
+
+						m_register->getPlugins().find(Args[1])->second->onDisable();
+						m_register->getPlugins().find(Args[1])->second->onEnable();
+					}
+					else
+					{
+						qqbot::Network::sendGroupMessage(groupID, "参数错误");
+						return;
+					}
+				}
+				else
+				{
+					qqbot::Network::sendGroupMessage(groupID, "参数错误");
+					return;
 				}
 			},
 			"plugin list",
@@ -441,6 +480,8 @@ namespace qqbot
 	{
 		//只允许移动，不允许复制
 		m_permission = command.m_permission;
+		m_register = command.m_register;
+		command.m_register = nullptr;
 		command.m_permission = nullptr;
 	}
 
@@ -451,12 +492,17 @@ namespace qqbot
 			return *this;
 
 		m_permission = command.m_permission;
+		m_register = command.m_register;
 		command.m_permission = nullptr;
+		command.m_register = nullptr;
 		return *this;
 	}
 
 	void Command::addCommand(const std::string& commandName, Command::GroupHandler handler, const std::string& commandFormat, const std::string& description)
 	{
+		//互斥锁
+		std::lock_guard<std::shared_mutex> lock(m_shareMutex);
+
 		if (m_GroupHandlers.find(commandName) != m_GroupHandlers.end())
 		{
 			throw THROW_ERROR(std::format("已经存在此指令：{}", commandName));
@@ -470,6 +516,9 @@ namespace qqbot
 
 	void Command::addCommand(const std::string& commandName, Command::UserHandler handler, const std::string& commandFormat, const std::string& description)
 	{
+		//互斥锁
+		std::lock_guard<std::shared_mutex> lock(m_shareMutex);
+
 		if (m_UserHandlers.find(commandName) != m_UserHandlers.end())
 		{
 			throw THROW_ERROR(std::format("已经存在此指令：{}", commandName));
@@ -481,11 +530,41 @@ namespace qqbot
 		m_userCommandFormats[commandName] = commandFormat;
 	}
 
+	void Command::removeCommand(const std::string& commandName, bool isGroup)
+	{
+		//互斥锁
+		std::lock_guard<std::shared_mutex> lock(m_shareMutex);
+
+		if (isGroup)
+		{
+			//删除群聊指令
+			if (m_GroupHandlers.find(commandName) == m_GroupHandlers.end())
+				throw THROW_ERROR("can't find this command");
+
+			m_GroupHandlers.erase(m_GroupHandlers.find(commandName));
+			m_groupCommandFormats.erase(m_groupCommandFormats.find(commandName));
+			m_groupCommandDescriptions.erase(m_groupCommandDescriptions.find(commandName));
+		}
+		else
+		{
+			//删除私聊指令
+			if (m_UserHandlers.find(commandName) == m_UserHandlers.end())
+				throw THROW_ERROR("can't find this command");
+
+			m_UserHandlers.erase(m_UserHandlers.find(commandName));
+			m_userCommandFormats.erase(m_userCommandFormats.find(commandName));
+			m_userCommandDescriptions.erase(m_userCommandDescriptions.find(commandName));
+		}
+	}
+
 	void Command::groupExcute(long long groupID,
 		long long senderID,
 		const std::string& command,
 		std::vector<std::string> args)
 	{
+		//读取锁
+		std::shared_lock<std::shared_mutex> lock(m_shareMutex);
+
 		//查找指令
 		if (m_GroupHandlers.find(command) == m_GroupHandlers.end())
 		{
@@ -534,6 +613,9 @@ namespace qqbot
 		const std::string& command,
 		std::vector<std::string> args)
 	{
+		//读取锁
+		std::shared_lock<std::shared_mutex> lock(m_shareMutex);
+
 		//查找是否有这个指令
 		if (m_UserHandlers.find(command) == m_UserHandlers.end())
 		{

@@ -73,6 +73,11 @@ outString, static_cast<long double>(m_mt() % 100000) / 1000));
 			qqbot::ServerInfo::getPermission().setGroupDefaultPermission("div", true);
 		}
 
+		virtual void onDisable()
+		{
+			qqbot::ServerInfo::getCommander().removeCommand("div", true);
+		}
+
 	private:
 		std::mt19937_64 m_mt;
 		std::mutex		m_mutex;
