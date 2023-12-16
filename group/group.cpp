@@ -60,7 +60,7 @@ namespace qqbot
 		if (message.size() <= 1ll)
 			return {};
 		
-		if (message[0] != '!')
+		if (message[0] != '/')
 			return {};
 
 		std::string commandName;
@@ -74,10 +74,10 @@ namespace qqbot
 			//群消息处理
 			command.groupExcute(groupID, senderUID, commandName, std::move(parseString));
 		}
-		catch (const std::exception& e)
+		catch (const std::exception&)
 		{
-			Network::sendGroupMessage(groupID, e.what());
-			std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+			// Network::sendGroupMessage(groupID, e.what());
+			// std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
 		}
 
 		return {};
