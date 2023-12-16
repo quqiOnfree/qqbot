@@ -54,152 +54,36 @@ namespace Weather
 				[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
 				{
 					if (Args.empty())
+						qqbot::Network::sendGroupMessage(groupID, "tq 位置 [a(实况)/b(预报)] -天气查询");
+					else if (Args.size() > 2)
+						qqbot::Network::sendGroupMessage(groupID, "参数错误");
+
+					//地点
+					std::string position = m_searchTree.getOriginalString(Args[0]);
+					std::string code = m_cityCode[position]["adcode"];
+
+					if (Args.size() == 1)
 					{
-						qqbot::Network::sendGroupMessage(groupID, "tq 位置 a(实况)/b(预报) -天气查询");
+						getCurrentWeather(position, code, groupID);
+						return;
 					}
-					else if (Args.size() == 2)
+
+					//实况
+					if (Args[1] == "a")
 					{
-						//地点
-						std::string position = m_searchTree.getOriginalString(Args[0]);
-						std::string code = m_cityCode[position]["adcode"];
-
-						//实况
-						if (Args[1] == "a")
-						{
-							//请求API
-							httplib::Client client("https://restapi.amap.com");
-							httplib::Params params = {
-								{ "key",m_apiKey },
-								{ "city",code },
-								{ "extensions","base" },
-								{ "output","JSON" }
-							};
-
-							httplib::Result result = client.Get("/v3/weather/weatherInfo", params, httplib::Headers());
-
-							if (result.error() != httplib::Error::Success && result.error() != httplib::Error::Connection)
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("请求API出现问题，请稍后再试"));
-								return;
-							}
-							else if (!result)
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法连接API"));
-								return;
-							}
-							else if (result->status != 200)
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，API错误码：{}", result->status));
-								return;
-							}
-
-							qjson::JObject jo = qjson::JParser::fastParse(result->body);
-
-							if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format(
-R"({}省{}的天气：
-天气状况：{}
-气温：{}℃
-风向：{}风{}级
-空气湿度：{}%
-数据发布时间：{})", 
-									jo["lives"][0]["province"].getString(),
-									jo["lives"][0]["city"].getString(),
-									jo["lives"][0]["weather"].getString(),
-									jo["lives"][0]["temperature"].getString(),
-									jo["lives"][0]["winddirection"].getString(),
-									jo["lives"][0]["windpower"].getString(),
-									jo["lives"][0]["humidity"].getString(),
-									jo["lives"][0]["reporttime"].getString()
-									));
-							}
-							else
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
-							}
-						}
-						//预报
-						else if (Args[1] == "b")
-						{
-							//请求API
-							httplib::Client client("https://restapi.amap.com");
-							httplib::Params params = {
-								{ "key",m_apiKey },
-								{ "city",code },
-								{ "extensions","all" },
-								{ "output","JSON" }
-							};
-
-							httplib::Result result = client.Get("/v3/weather/weatherInfo", params, httplib::Headers());
-
-							if (result.error() != httplib::Error::Success && result.error() != httplib::Error::Connection)
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("请求API出现问题，请稍后再试"));
-								return;
-							}
-							else if (!result)
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法连接API"));
-								return;
-							}
-							else if (result->status != 200)
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，API错误码：{}", result->status));
-								return;
-							}
-
-							qjson::JObject jo = qjson::JParser::fastParse(result->body);
-
-							if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
-							{
-								std::string outStr = std::format(
-									"{}省{}的预报天气：\n",
-									jo["forecasts"][0]["province"].getString(),
-									jo["forecasts"][0]["city"].getString()
-								);
-								qjson::list_t& list = jo["forecasts"][0]["casts"].getList();
-
-								for (auto i = list.begin(); i != list.end(); i++)
-								{
-									outStr += std::format(R"(--------------------
-日期：{}
-天气状况：{}-{}
-气温：{}℃-{}℃
-风向：{}风{}级-{}风{}级
-)",
-										(*i)["date"].getString(),
-										(*i)["dayweather"].getString(),
-										(*i)["nightweather"].getString(),
-										(*i)["daytemp"].getString(),
-										(*i)["nighttemp"].getString(),
-										(*i)["daywind"].getString(),
-										(*i)["daypower"].getString(),
-										(*i)["nightwind"].getString(),
-										(*i)["nightpower"].getString()
-									);
-								}
-
-								qqbot::Network::sendGroupMessage(groupID, outStr);
-
-								//qqbot::Network::sendGroupMessage(groupID, );
-							}
-							else
-							{
-								qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
-							}
-						}
-						else
-						{
-							qqbot::Network::sendGroupMessage(groupID, "参数错误");
-						}
+						getCurrentWeather(position, code, groupID);
+					}
+					//预报
+					else if (Args[1] == "b")
+					{
+						getFutureWeather(position, code, groupID);
 					}
 					else
 					{
 						qqbot::Network::sendGroupMessage(groupID, "参数错误");
 					}
 				},
-				"tq 位置 a(实况)/b(预报)",
+				"tq 位置 [a(实况)/b(预报)]",
 					"天气查询"
 					);
 
@@ -209,6 +93,214 @@ R"({}省{}的天气：
 		virtual void onDisable()
 		{
 			qqbot::ServerInfo::getCommander().removeCommand("tq", true);
+		}
+
+	protected:
+		void getCurrentWeather(const std::string& positon, const std::string& code, long long groupID)
+		{
+			//请求API
+			httplib::Client client("https://restapi.amap.com");
+			httplib::Params params = {
+				{ "key",m_apiKey },
+				{ "city",code },
+				{ "extensions","base" },
+				{ "output","JSON" }
+			};
+
+			httplib::Result result = client.Get("/v3/weather/weatherInfo", params, httplib::Headers());
+
+			if (result.error() != httplib::Error::Success && result.error() != httplib::Error::Connection)
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("请求API出现问题，请稍后再试"));
+				return;
+			}
+			else if (!result)
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法连接API"));
+				return;
+			}
+			else if (result->status != 200)
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，API错误码：{}", result->status));
+				return;
+			}
+
+			qjson::JObject jo = qjson::JParser::fastParse(result->body);
+
+			if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format(
+					R"({}-{}的天气：
+天气状况：{}
+气温：{}℃
+风向：{}风{}级
+空气湿度：{}%
+数据发布时间：{})",
+jo["lives"][0]["province"].getString(),
+jo["lives"][0]["city"].getString(),
+jo["lives"][0]["weather"].getString(),
+jo["lives"][0]["temperature"].getString(),
+jo["lives"][0]["winddirection"].getString(),
+jo["lives"][0]["windpower"].getString(),
+jo["lives"][0]["humidity"].getString(),
+jo["lives"][0]["reporttime"].getString()
+));
+			}
+			else
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
+			}
+		}
+
+		void getFutureWeather(const std::string& positon, const std::string& code, long long groupID)
+		{
+			//string按空格分割函数
+			auto split = [](const std::string& data, char chr = ' ') {
+				std::vector<std::string> dataList;
+
+				long long begin = -1;
+				long long i = 0;
+
+				for (; static_cast<size_t>(i) < data.size(); i++)
+				{
+					if (data[i] == chr)
+					{
+						if ((i - begin - 1) > 0)
+						{
+							dataList.push_back(data.substr(begin + 1, i - begin - 1));
+						}
+						begin = i;
+					}
+				}
+				dataList.push_back(data.substr(begin + 1, i - begin - 1));
+
+				return dataList;
+				};
+
+			auto getDayOfWeek = [](unsigned int year, unsigned int month, unsigned int day) {
+				int week = 0;
+				unsigned int y = 0, c = 0, m = 0, d = 0;
+				if (month == 1 || month == 2)
+				{
+					c = (year - 1) / 100;
+					y = (year - 1) % 100;
+					m = month + 12;
+					d = day;
+				}
+				else
+				{
+					c = year / 100;
+					y = year % 100;
+					m = month;
+					d = day;
+				}
+
+				week = y + y / 4 + c / 4 - 2 * c + 26 * (m + 1) / 10 + d - 1; //蔡勒公式
+				week = week >= 0 ? (week % 7) : (week % 7 + 7); //week为负时取模
+				if (week == 0) //星期日不作为一周的第一天
+				{
+					week = 7;
+				}
+
+				return week;
+				};
+
+			//请求API
+			httplib::Client client("https://restapi.amap.com");
+			httplib::Params params = {
+				{ "key",m_apiKey },
+				{ "city",code },
+				{ "extensions","all" },
+				{ "output","JSON" }
+			};
+
+			httplib::Result result = client.Get("/v3/weather/weatherInfo", params, httplib::Headers());
+
+			if (result.error() != httplib::Error::Success && result.error() != httplib::Error::Connection)
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("请求API出现问题，请稍后再试"));
+				return;
+			}
+			else if (!result)
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法连接API"));
+				return;
+			}
+			else if (result->status != 200)
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，API错误码：{}", result->status));
+				return;
+			}
+
+			qjson::JObject jo = qjson::JParser::fastParse(result->body);
+
+			if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
+			{
+				std::string outStr = std::format(
+					"{}-{}的预报天气：\n",
+					jo["forecasts"][0]["province"].getString(),
+					jo["forecasts"][0]["city"].getString()
+				);
+				qjson::list_t& list = jo["forecasts"][0]["casts"].getList();
+
+				for (auto i = list.begin(); i != list.end(); i++)
+				{
+					std::string date = (*i)["date"].getString();
+					std::vector<std::string> date_list = split(date, '-');
+					int day = getDayOfWeek(std::stoi(date_list[0]), std::stoi(date_list[1]), std::stoi(date_list[2]));
+					std::string day_string;
+
+					switch (day)
+					{
+					case 1:
+						day_string = "一";
+						break;
+					case 2:
+						day_string = "二";
+						break;
+					case 3:
+						day_string = "三";
+						break;
+					case 4:
+						day_string = "四";
+						break;
+					case 5:
+						day_string = "五";
+						break;
+					case 6:
+						day_string = "六";
+						break;
+					case 7:
+						day_string = "日";
+						break;
+					default:
+						break;
+					}
+
+					outStr += std::format(R"(--------------------
+日期：{} 星期{}
+天气状况：{}-{}
+气温：{}℃-{}℃
+风向：{}风{}级-{}风{}级
+)",
+date, day_string,
+(*i)["dayweather"].getString(),
+(*i)["nightweather"].getString(),
+(*i)["daytemp"].getString(),
+(*i)["nighttemp"].getString(),
+(*i)["daywind"].getString(),
+(*i)["daypower"].getString(),
+(*i)["nightwind"].getString(),
+(*i)["nightpower"].getString()
+);
+				}
+
+				qqbot::Network::sendGroupMessage(groupID, outStr);
+			}
+			else
+			{
+				qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
+			}
 		}
 
 	private:

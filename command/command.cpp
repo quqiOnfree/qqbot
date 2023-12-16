@@ -678,7 +678,7 @@ namespace qqbot
 		};
 
 		//判断消息第一个字符是 '!'
-		if (message.size() > 1 && message[0] == '!')
+		if (message.size() > 1 && message[0] == '/')
 		{
 			//分割后的参数
 			std::vector<std::string> parseString = split(message.substr(1));
