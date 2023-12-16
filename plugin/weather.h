@@ -135,7 +135,8 @@ namespace Weather
 气温：{}℃
 风向：{}风{}级
 空气湿度：{}%
-数据发布时间：{})",
+数据发布时间：{}
+狗筱LeiSureLy提供天气查询服务)",
 jo["lives"][0]["province"].getString(),
 jo["lives"][0]["city"].getString(),
 jo["lives"][0]["weather"].getString(),
@@ -282,7 +283,7 @@ jo["lives"][0]["reporttime"].getString()
 天气状况：{}-{}
 气温：{}℃-{}℃
 风向：{}风{}级-{}风{}级
-)",
+狗筱LeiSureLy提供天气查询服务)",
 date, day_string,
 (*i)["dayweather"].getString(),
 (*i)["nightweather"].getString(),
