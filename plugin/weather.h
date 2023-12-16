@@ -283,7 +283,7 @@ jo["lives"][0]["reporttime"].getString()
 天气状况：{}-{}
 气温：{}℃-{}℃
 风向：{}风{}级-{}风{}级
-狗筱LeiSureLy提供天气查询服务)",
+)",
 date, day_string,
 (*i)["dayweather"].getString(),
 (*i)["nightweather"].getString(),
@@ -295,6 +295,8 @@ date, day_string,
 (*i)["nightpower"].getString()
 );
 				}
+
+				outStr += "由高德API提供信息，狗筱LeiSureLy提供服务";
 
 				qqbot::Network::sendGroupMessage(groupID, outStr);
 			}
