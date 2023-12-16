@@ -130,7 +130,7 @@ namespace Weather
 			if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
 			{
 				qqbot::Network::sendGroupMessage(groupID, std::format(
-					R"({}省{}的天气：
+					R"({}-{}的天气：
 天气状况：{}
 气温：{}℃
 风向：{}风{}级
@@ -154,6 +154,57 @@ jo["lives"][0]["reporttime"].getString()
 
 		void getFutureWeather(const std::string& positon, const std::string& code, long long groupID)
 		{
+			//string按空格分割函数
+			auto split = [](const std::string& data, char chr = ' ') {
+				std::vector<std::string> dataList;
+
+				long long begin = -1;
+				long long i = 0;
+
+				for (; static_cast<size_t>(i) < data.size(); i++)
+				{
+					if (data[i] == chr)
+					{
+						if ((i - begin - 1) > 0)
+						{
+							dataList.push_back(data.substr(begin + 1, i - begin - 1));
+						}
+						begin = i;
+					}
+				}
+				dataList.push_back(data.substr(begin + 1, i - begin - 1));
+
+				return dataList;
+				};
+
+			auto getDayOfWeek = [](unsigned int year, unsigned int month, unsigned int day) {
+				int week = 0;
+				unsigned int y = 0, c = 0, m = 0, d = 0;
+				if (month == 1 || month == 2)
+				{
+					c = (year - 1) / 100;
+					y = (year - 1) % 100;
+					m = month + 12;
+					d = day;
+				}
+				else
+				{
+					c = year / 100;
+					y = year % 100;
+					m = month;
+					d = day;
+				}
+
+				week = y + y / 4 + c / 4 - 2 * c + 26 * (m + 1) / 10 + d - 1; //蔡勒公式
+				week = week >= 0 ? (week % 7) : (week % 7 + 7); //week为负时取模
+				if (week == 0) //星期日不作为一周的第一天
+				{
+					week = 7;
+				}
+
+				return week;
+				};
+
 			//请求API
 			httplib::Client client("https://restapi.amap.com");
 			httplib::Params params = {
@@ -186,7 +237,7 @@ jo["lives"][0]["reporttime"].getString()
 			if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
 			{
 				std::string outStr = std::format(
-					"{}省{}的预报天气：\n",
+					"{}-{}的预报天气：\n",
 					jo["forecasts"][0]["province"].getString(),
 					jo["forecasts"][0]["city"].getString()
 				);
@@ -195,14 +246,44 @@ jo["lives"][0]["reporttime"].getString()
 				for (auto i = list.begin(); i != list.end(); i++)
 				{
 					std::string date = (*i)["date"].getString();
+					std::vector<std::string> date_list = split(date, '-');
+					int day = getDayOfWeek(std::stoi(date_list[0]), std::stoi(date_list[1]), std::stoi(date_list[2]));
+					std::string day_string;
+
+					switch (day)
+					{
+					case 1:
+						day_string = "一";
+						break;
+					case 2:
+						day_string = "二";
+						break;
+					case 3:
+						day_string = "三";
+						break;
+					case 4:
+						day_string = "四";
+						break;
+					case 5:
+						day_string = "五";
+						break;
+					case 6:
+						day_string = "六";
+						break;
+					case 7:
+						day_string = "日";
+						break;
+					default:
+						break;
+					}
 
 					outStr += std::format(R"(--------------------
-日期：{}
+日期：{} 星期{}
 天气状况：{}-{}
 气温：{}℃-{}℃
 风向：{}风{}级-{}风{}级
 )",
-date,
+date, day_string,
 (*i)["dayweather"].getString(),
 (*i)["nightweather"].getString(),
 (*i)["daytemp"].getString(),
