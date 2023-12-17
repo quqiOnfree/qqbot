@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <set>
+#include <shared_mutex>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
@@ -58,9 +59,18 @@ namespace Weather
 					else if (Args.size() > 2)
 						qqbot::Network::sendGroupMessage(groupID, "参数错误");
 
-					//地点
-					std::string position = m_searchTree.getOriginalString(Args[0]);
-					std::string code = m_cityCode[position]["adcode"];
+					// 地理位置
+					std::string position, code;
+					{
+						//上锁
+						std::shared_lock<std::shared_mutex> searchTree_lock(m_searchTree_mutex, std::defer_lock),
+							cityCode_lock(m_cityCode_mutex, std::defer_lock);
+						std::lock(searchTree_lock, cityCode_lock);
+
+						position = m_searchTree.getOriginalString(Args[0]);
+						code = m_cityCode[position]["adcode"];
+					}
+					
 
 					if (Args.size() == 1)
 					{
@@ -307,12 +317,11 @@ date, day_string,
 		}
 
 	private:
-		static std::unordered_map<std::string, std::unordered_map<std::string, std::string>> m_cityCode;
-		static SearchTreeLibrary::SearchTree m_searchTree;
+		std::unordered_map<std::string, std::unordered_map<std::string, std::string>>	m_cityCode;
+		mutable std::shared_mutex														m_cityCode_mutex;
+		SearchTreeLibrary::SearchTree	m_searchTree;
+		mutable std::shared_mutex		m_searchTree_mutex;
 
 		std::string m_apiKey;
 	};
 }
-
-std::unordered_map<std::string, std::unordered_map<std::string, std::string>> Weather::WeatherPlugin::m_cityCode;
-SearchTreeLibrary::SearchTree Weather::WeatherPlugin::m_searchTree;

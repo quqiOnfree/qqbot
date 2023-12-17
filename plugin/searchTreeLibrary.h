@@ -38,7 +38,7 @@ namespace SearchTreeLibrary
 			size_t i = 0;
 			while (data.size() > i && m_tree.find(data[i++]) == m_tree.end()) {}
 			if (m_tree.find(data[i - 1]) == m_tree.end())
-				throw std::exception("can't find this question");
+				throw std::logic_error("can't find this question");
 			locSet = m_tree.find(data[i - 1])->second;
 
 			for (auto i = data.begin() + 1; i != data.end(); i++)

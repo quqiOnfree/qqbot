@@ -23,8 +23,17 @@ namespace qqbot
 			std::cout << std::format("{}{}:{}, -- {} --", buffer, req.remote_addr, req.remote_port, req.method) << '\n';
 		}
 
-		//从go-cqhttp获取到的json消息
-		auto getjson = qjson::JParser::fastParse(req.body);
+		qjson::JObject getjson;
+		try
+		{
+			//从go-cqhttp获取到的json消息
+			getjson = qjson::JParser::fastParse(req.body);
+		}
+		catch (const std::exception& e)
+		{
+			std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+			return;
+		}
 
 		//debug
 		//std::cout << qjson::JWriter::fastFormatWrite(getjson) << '\n';
