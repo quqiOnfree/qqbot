@@ -153,8 +153,7 @@ namespace Weather
 气温：{}℃
 风向：{}风{}级
 空气湿度：{}%
-数据发布时间：{}
-狗筱LeiSureLy提供天气查询服务)",
+数据发布时间：{})",
 jo["lives"][0]["province"].getString(),
 jo["lives"][0]["city"].getString(),
 jo["lives"][0]["weather"].getString(),
@@ -313,8 +312,6 @@ date, day_string,
 (*i)["nightpower"].getString()
 );
 				}
-
-				outStr += "由高德API提供信息，狗筱LeiSureLy提供服务";
 
 				qqbot::Network::sendGroupMessage(groupID, outStr);
 			}
