@@ -1,6 +1,7 @@
 ﻿#include "network.h"
 
 #include <format>
+#include <iostream>
 
 #include "permission.h"
 
@@ -21,6 +22,8 @@ namespace qqbot
 		httplib::Headers headers;
 		params.insert({ {"group_id", std::to_string(groupID)}, {"message", message} });
 
+		std::cout << std::format("向群{}发送消息：{}", groupID, message);
+
 		cli.Get("/send_group_msg", params, headers);
 	};
 
@@ -30,6 +33,8 @@ namespace qqbot
 		httplib::Params params;
 		httplib::Headers headers;
 		params.insert({ {"user_id", std::to_string(senderUID)}, {"message", message} });
+
+		std::cout << std::format("向用户{}发送消息：{}", senderUID, message);
 
 		cli.Get("/send_private_msg", params, headers);
 	};

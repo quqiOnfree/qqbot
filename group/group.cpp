@@ -57,6 +57,8 @@ namespace qqbot
 		//发送的消息
 		std::string message = strip(getjson["message"].getString());
 
+		std::cout << std::format("接收到来自{}的{}发送的消息：{}\n", groupID, senderUID, message);
+
 		if (message.size() <= 1ll)
 			return {};
 		
@@ -74,10 +76,10 @@ namespace qqbot
 			//群消息处理
 			command.groupExcute(groupID, senderUID, commandName, std::move(parseString));
 		}
-		catch (const std::exception&)
+		catch (const std::exception& e)
 		{
-			// Network::sendGroupMessage(groupID, e.what());
-			// std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+			Network::sendGroupMessage(groupID, e.what());
+			std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
 		}
 
 		return {};

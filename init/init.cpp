@@ -43,7 +43,9 @@ namespace qqbot
 
 	int init(httplib::Server& server, qqbot::Permission& permission, qqbot::Register& pluginRegister)
 	{
+#ifdef WIN32
 		system("chcp 65001");
+#endif
 
 		//权限组导入
 		permission.init();
