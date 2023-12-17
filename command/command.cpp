@@ -568,7 +568,8 @@ namespace qqbot
 		//查找指令
 		if (m_GroupHandlers.find(command) == m_GroupHandlers.end())
 		{
-			throw std::exception("could not find this command");
+			return;
+			// throw std::exception("could not find this command");
 		}
 
 		//是否是operator
@@ -619,7 +620,8 @@ namespace qqbot
 		//查找是否有这个指令
 		if (m_UserHandlers.find(command) == m_UserHandlers.end())
 		{
-			throw std::exception("could not find this command");
+			return;
+			// throw std::exception("could not find this command");
 		}
 
 		//是否是operator
