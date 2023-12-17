@@ -55,9 +55,15 @@ namespace Weather
 				[this](long long groupID, long long senderID, const std::string& commandName, std::vector<std::string> Args)
 				{
 					if (Args.empty())
+					{
 						qqbot::Network::sendGroupMessage(groupID, "tq 位置 [a(实况)/b(预报)] -天气查询");
+						return;
+					}
 					else if (Args.size() > 2)
+					{
 						qqbot::Network::sendGroupMessage(groupID, "参数错误");
+						return;
+					}
 
 					// 地理位置
 					std::string position, code;
@@ -70,7 +76,6 @@ namespace Weather
 						position = m_searchTree.getOriginalString(Args[0]);
 						code = m_cityCode[position]["adcode"];
 					}
-					
 
 					if (Args.size() == 1)
 					{
@@ -82,15 +87,18 @@ namespace Weather
 					if (Args[1] == "a")
 					{
 						getCurrentWeather(position, code, groupID);
+						return;
 					}
 					//预报
 					else if (Args[1] == "b")
 					{
 						getFutureWeather(position, code, groupID);
+						return;
 					}
 					else
 					{
 						qqbot::Network::sendGroupMessage(groupID, "参数错误");
+						return;
 					}
 				},
 				"tq 位置 [a(实况)/b(预报)]",
