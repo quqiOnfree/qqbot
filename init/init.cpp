@@ -10,6 +10,9 @@
 #include "singleUser.h"
 #include "group.h"
 #include "definition.h"
+#include "eventRegister.h"
+
+extern qqbot::EventRegister	eventRegister;
 
 namespace qqbot
 {
@@ -42,11 +45,18 @@ namespace qqbot
 		{
 			//当消息类型是私聊类型
 			res = qqbot::privateMethod(req);
+			eventRegister.updateUserReceiveEvent(getjson["user_id"].getInt(),
+				getjson["message_id"].getInt(),
+				getjson["message"].getString());
 		}
 		else if (getjson["message_type"] == "group")
 		{
 			//当消息类型是群聊类型
 			res = qqbot::groupMethod(req);
+			eventRegister.updateGroupReceiveEvent(getjson["group_id"].getInt(),
+				getjson["user_id"].getInt(),
+				getjson["message_id"].getInt(),
+				getjson["message"].getString());
 		}
 	}
 

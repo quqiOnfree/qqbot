@@ -46,6 +46,9 @@ file(
 	"${CMAKE_SOURCE_DIR}/register/*.h"
 	"${CMAKE_SOURCE_DIR}/register/*.cpp"
 
+	"${CMAKE_SOURCE_DIR}/eventRegister/*.h"
+	"${CMAKE_SOURCE_DIR}/eventRegister/*.cpp"
+
 	"${CMAKE_SOURCE_DIR}/singleUser/*.h"
 	"${CMAKE_SOURCE_DIR}/singleUser/*.cpp"
 )
@@ -65,6 +68,7 @@ include_directories(
 	"${CMAKE_SOURCE_DIR}/singleUser/"
 	"${CMAKE_SOURCE_DIR}/plugin/"
 	"${CMAKE_SOURCE_DIR}/pluginLibrary/"
+	"${CMAKE_SOURCE_DIR}/eventRegister/"
 	)
 
 if (MSVC)

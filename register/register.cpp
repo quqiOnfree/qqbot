@@ -9,6 +9,7 @@
 #include "groupOperator.h"
 #include "weather.h"
 #include "autoAnswer.h"
+#include "autoMuter.h"
 
 namespace qqbot
 {
@@ -30,6 +31,9 @@ namespace qqbot
 		this->addPlugin(std::make_shared<Weather::WeatherPlugin>());
 
 		//添加自动回答插件
+		this->addPlugin(std::make_shared<AutoAnswer::AutoAnswerPlugin>());
+
+		//添加自动检测发言插件
 		this->addPlugin(std::make_shared<AutoAnswer::AutoAnswerPlugin>());
 	}
 

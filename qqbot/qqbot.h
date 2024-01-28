@@ -10,5 +10,6 @@
 #include "permission.h"
 #include "command.h"
 #include "register.h"
+#include "eventRegister.h"
 
 // TODO: 在此处引用程序需要的其他标头。

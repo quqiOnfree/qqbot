@@ -3,10 +3,11 @@
 
 #include "qqbot.h"
 
-httplib::Server		server;
-qqbot::Permission	permission;
-qqbot::Register		pluginRegister;
-qqbot::Command		command(&permission, &pluginRegister);
+httplib::Server			server;
+qqbot::Permission		permission;
+qqbot::Register			pluginRegister;
+qqbot::Command			command(&permission, &pluginRegister);
+qqbot::EventRegister	eventRegister;
 
 int main()
 {
