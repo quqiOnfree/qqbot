@@ -8,17 +8,143 @@
 #include <unordered_map>
 #include <set>
 #include <shared_mutex>
+#include <queue>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
 #include "network.h"
-#include "searchTreeLibrary.h"
 
 namespace Weather
 {
 	class WeatherPlugin : public qqbot::CppPlugin
 	{
 	public:
+		class CitySearchTree
+		{
+		public:
+			CitySearchTree() = default;
+			~CitySearchTree() = default;
+
+			// 加入
+			void insert(const std::string& data)
+			{
+				m_strings.push_back(data);
+				size_t position = m_strings.size() - 1;
+				for (auto i = data.begin(); i != data.end(); i++)
+				{
+					m_tree[*i].insert(position);
+				}
+			}
+
+			// 获取模糊搜索的匹配字符串
+			std::string getOriginalString(const std::string& data) const
+			{
+				if (data.empty())
+				{
+					throw std::logic_error("data is empty");
+				}
+
+				bool is_key = kmp(data, "区") != -1 ? true : false;
+
+				std::set<size_t> locSet;
+				{
+					size_t i = 0;
+					while (data.size() > i && m_tree.find(data[i++]) == m_tree.end()) {}
+					auto itor = m_tree.find(data[i - 1]);
+					if (itor == m_tree.end())
+						throw std::logic_error("can't find this question");
+					locSet = itor->second;
+				}
+
+				for (auto i = data.begin() + 1; i != data.end(); i++)
+				{
+					auto itor = m_tree.find(*i);
+					if (itor == m_tree.end()) continue;
+					locSet.insert(itor->second.begin(), itor->second.end());
+				}
+
+				std::priority_queue<std::pair<int, std::string>,
+					std::vector<std::pair<int, std::string>>,
+					std::greater<std::pair<int, std::string>>> buffer;
+				for (auto i = locSet.begin(); i != locSet.end(); i++)
+				{
+					const auto& str = m_strings[*i];
+					buffer.emplace(std::pair<int, std::string>{minDistance(data, str), str});
+				}
+
+				int min = buffer.top().first;
+				std::string restr = buffer.top().second;
+				buffer.pop();
+				while (!buffer.empty() && (buffer.top().first == min || is_key))
+				{
+					if (kmp(buffer.top().second, "区") != -1)
+					{
+						restr = buffer.top().second;
+						break;
+					}
+					buffer.pop();
+				}
+				return restr;
+			}
+
+		protected:
+			static int minDistance(const std::string& word1, const std::string& word2)
+			{
+				int n = (int)word1.length();
+				int m = (int)word2.length();
+				if (n * m == 0) return n + m;
+
+				std::vector<std::vector<int>> D(n + 1, std::vector<int>(m + 1));
+
+				for (int i = 0; i < n + 1; i++)
+				{
+					D[i][0] = i;
+				}
+				for (int j = 0; j < m + 1; j++)
+				{
+					D[0][j] = j;
+				}
+
+				// 计算所有 DP 值
+				for (int i = 1; i < n + 1; i++)
+				{
+					for (int j = 1; j < m + 1; j++)
+					{
+						int left = D[i - 1][j] + 1;
+						int down = D[i][j - 1] + 1;
+						int left_down = D[i - 1][j - 1];
+						if (word1[i - 1] != word2[j - 1]) left_down += 1;
+						D[i][j] = std::min(left, std::min(down, left_down));
+					}
+				}
+				return D[n][m];
+			}
+
+			static long long kmp(const std::string& match_string, const std::string& pattern)
+			{
+				if (match_string.length() < pattern.length()) return -1;
+
+				for (size_t i = 0; i < match_string.size(); i++)
+				{
+					size_t j = 0;
+					for (; j < match_string.size() - i && j < pattern.size(); j++)
+					{
+						if (match_string[i + j] != pattern[j])
+							break;
+					}
+					if (j == pattern.size())
+						return i;
+				}
+				return -1;
+			}
+
+		private:
+			// 搜索树本体
+			std::unordered_map<char, std::set<size_t>>	m_tree;
+			// 匹配字符串
+			std::vector<std::string>					m_strings;
+		};
+
 		WeatherPlugin() : m_apiKey("dffc4517b36352b24303ecd2493658c7")
 		{
 			qqbot::CppPlugin::pluginInfo.author = "quqiOnfree";
@@ -322,11 +448,13 @@ date, day_string,
 		}
 
 	private:
-		std::unordered_map<std::string, std::unordered_map<std::string, std::string>>	m_cityCode;
-		mutable std::shared_mutex														m_cityCode_mutex;
-		SearchTreeLibrary::SearchTree	m_searchTree;
-		mutable std::shared_mutex		m_searchTree_mutex;
+		std::unordered_map<std::string,
+			std::unordered_map<std::string,
+				std::string>>				m_cityCode;
+		mutable std::shared_mutex			m_cityCode_mutex;
+		CitySearchTree						m_searchTree;
+		mutable std::shared_mutex			m_searchTree_mutex;
 
-		std::string m_apiKey;
+		std::string							m_apiKey;
 	};
 }
