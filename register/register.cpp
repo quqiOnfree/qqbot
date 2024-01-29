@@ -10,6 +10,7 @@
 #include "weather.h"
 #include "autoAnswer.h"
 #include "autoMuter.h"
+#include "randomImageSender.h"
 
 namespace qqbot
 {
@@ -34,7 +35,10 @@ namespace qqbot
 		this->addPlugin(std::make_shared<AutoAnswer::AutoAnswerPlugin>());
 
 		//添加自动检测发言插件
-		this->addPlugin(std::make_shared<AutoAnswer::AutoAnswerPlugin>());
+		this->addPlugin(std::make_shared<AutoMuter::AutoMuterPlugin>());
+
+		//添加发送图片插件
+		this->addPlugin(std::make_shared<RandomImageSender::RandomImageSenderPlugin>());
 	}
 
 	void Register::run()
