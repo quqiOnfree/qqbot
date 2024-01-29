@@ -32,10 +32,57 @@ namespace AutoMuter
         }
         ~AutoMuterPlugin() = default;
 
+        void createConfig()
+        {
+            qjson::JObject json;
+
+            qjson::JObject localjson;
+            localjson["word"] = "fuck";
+            localjson["is_mute"] = true;
+
+            json.push_back(localjson);
+
+            std::filesystem::create_directory("./plugin_config/AutoMuter");
+
+            std::ofstream outfile("./plugin_config/AutoMuter/config.json");
+            outfile << qjson::JWriter::fastFormatWrite(json);
+        }
+
         void onLoad() override
         {
-            m_MuteType_map["傻逼"] = MuteType::MUTE;
-            m_SearchTree.insert("傻逼");
+            {
+                std::ifstream infile("./plugin_config/AutoMuter/config.json");
+                if (!infile)
+                    createConfig();
+            }
+
+            try
+            {
+                // 配置文件
+                std::ifstream infile("./plugin_config/AutoMuter/config.json");
+
+                qjson::JObject jo(qjson::JParser::fastParse(infile));
+                const qjson::list_t& list = jo.getList();
+
+                // 将配置文件内容加入 搜索树
+                for (const auto& i : list)
+                {
+                    if (i["is_mute"].getBool())
+                    {
+                        m_MuteType_map[i["word"].getString()] = MuteType::MUTE;
+                        m_SearchTree.insert(i["word"].getString());
+                    }
+                    else
+                    {
+                        m_MuteType_map[i["word"].getString()] = MuteType::NOMAL;
+                        m_SearchTree.insert(i["word"].getString());
+                    }
+                }
+            }
+            catch (const std::exception& e)
+            {
+                std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+            }
         }
 
         void onEnable() override
