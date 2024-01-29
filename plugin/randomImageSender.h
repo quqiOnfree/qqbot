@@ -93,38 +93,71 @@ namespace RandomImageSender
                         const std::string& commandName,
                         std::vector<std::string> Args) -> void {
 
-                        if (Args.empty())
+                        try
                         {
+                            // 遍历图片表
+                            std::vector<std::string> files;
+                            for (const auto& file:
+                                std::filesystem::directory_iterator(functionStruct.path))
+                            {
+                                if (file.is_regular_file())
+                                    files.emplace_back(file.path().string());
+                            }
+
+                            // 选取随机图片
+                            size_t rannum = 0;
+                            {
+                                std::unique_lock<std::mutex> ul(m_mutex);
+                                rannum = m_mt() % files.size();
+                            }
+
                             qqbot::Network::sendGroupMessage(groupID,
-                                std::format("{} -{}", function_name, functionStruct.description));
+                                std::format("[CQ:image,file=file:///{},id=40000]",
+                                    std::filesystem::absolute(files.at(rannum)).string()));
                             return;
                         }
-                        else if (Args.size() > 0)
+                        catch (...)
                         {
-                            qqbot::Network::sendGroupMessage(groupID, "参数错误");
+                            qqbot::Network::sendGroupMessage(groupID, "读取图片错误，可能是配置错误");
                             return;
                         }
+                    },
+                    function_name,
+                    functionStruct.description);
 
-                        // 遍历图片表
-                        std::vector<std::string> files;
-                        std::filesystem::directory_iterator file_itor(functionStruct.path);
-                        for (; !file_itor._At_end(); file_itor++)
-                        {
-                            if (file_itor->is_regular_file())
-                                files.emplace_back(file_itor->path().string());
-                        }
+                qqbot::ServerInfo::getCommander().addCommand(function_name,
+                    [function_name, functionStruct, this](long long senderID,
+                        const std::string& commandName,
+                        std::vector<std::string> Args) -> void {
 
-                        // 选取随机图片
-                        size_t rannum = 0;
-                        {
-                            std::unique_lock<std::mutex> ul(m_mutex);
-                            rannum = m_mt() % files.size();
-                        }
+                            try
+                            {
+                                // 遍历图片表
+                                std::vector<std::string> files;
+                                for (const auto& file:
+                                    std::filesystem::directory_iterator(functionStruct.path))
+                                {
+                                    if (file.is_regular_file())
+                                        files.emplace_back(file.path().string());
+                                }
 
-                        qqbot::Network::sendGroupMessage(groupID,
-                            std::format("[CQ:image,file=file:///{},id=40000]", 
-                                std::filesystem::absolute(files.at(rannum)).string()));
-                        return;
+                                // 选取随机图片
+                                size_t rannum = 0;
+                                {
+                                    std::unique_lock<std::mutex> ul(m_mutex);
+                                    rannum = m_mt() % files.size();
+                                }
+
+                                qqbot::Network::sendUserMessage(senderID,
+                                    std::format("[CQ:image,file=file:///{},id=40000]",
+                                        std::filesystem::absolute(files.at(rannum)).string()));
+                                return;
+                            }
+                            catch (...)
+                            {
+                                qqbot::Network::sendUserMessage(senderID, "读取图片错误，可能是配置错误");
+                                return;
+                            }
                     },
                     function_name,
                     functionStruct.description);
