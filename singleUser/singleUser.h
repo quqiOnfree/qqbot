@@ -4,5 +4,5 @@
 
 namespace qqbot
 {
-	httplib::Response privateMethod(const httplib::Request& req);
+    httplib::Response privateMethod(const httplib::Request& req);
 }

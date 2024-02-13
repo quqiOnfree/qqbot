@@ -8,5 +8,5 @@
 
 namespace qqbot
 {
-	int init(httplib::Server& server, qqbot::Permission& permission, qqbot::Register& pluginRegister);
+    int init(httplib::Server& server, qqbot::Permission& permission, qqbot::Register& pluginRegister);
 }

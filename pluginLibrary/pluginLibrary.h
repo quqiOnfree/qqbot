@@ -7,8 +7,8 @@
 
 namespace qqbot::ServerInfo
 {
-	qqbot::Command& getCommander();
-	qqbot::Permission& getPermission();
-	qqbot::Register& getPluginRegister();
-	qqbot::EventRegister& getEventRegister();
+    qqbot::Command& getCommander();
+    qqbot::Permission& getPermission();
+    qqbot::Register& getPluginRegister();
+    qqbot::EventRegister& getEventRegister();
 }

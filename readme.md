@@ -9,8 +9,23 @@
 - [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
 - [asio](https://github.com/chriskohlhoff/asio)
 - [openssl](https://github.com/openssl/openssl)
-### 导入
-- 在[CMakeLists.txt](./CMakeLists.txt)里面进行编辑然后再编译
+### 构建
+1. 安装 cmake vcpkg c++编译器
+2. 执行以下命令  
+   ```cmd
+   vcpkg install openssl
+   vcpkg install cpp-httplib
+   vcpkg install asio
+   ```
+3. 构建此程序
+   ```cmd
+   cd 此程序的目录
+   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=你的vcpkg的目录/scripts/buildsystems/vcpkg.cmake
+   cd build
+   cmake --build . --config Release -j8
+   ```
+4. 1. 配置[go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
+   2. 运行go-cqhttp再运行此程序即可使用
 
 ## 功能
 ### QQ机器人插件系统
@@ -27,50 +42,50 @@
 
 namespace qqbot
 {
-	struct PluginInfo
-	{
-		//插件名称
-		std::string name;
+    struct PluginInfo
+    {
+        //插件名称
+        std::string name;
 
-		//插件作者名
-		std::string author;
+        //插件作者名
+        std::string author;
 
-		//插件版本
-		std::string version;
-	};
+        //插件版本
+        std::string version;
+    };
 
-	class CppPlugin
-	{
-	public:
-		//禁止复制，只能移动
-		CppPlugin() = default;
-		CppPlugin(const CppPlugin&) = delete;
-		~CppPlugin() = default;
+    class CppPlugin
+    {
+    public:
+        //禁止复制，只能移动
+        CppPlugin() = default;
+        CppPlugin(const CppPlugin&) = delete;
+        ~CppPlugin() = default;
 
-		CppPlugin& operator =(const CppPlugin&) = delete;
+        CppPlugin& operator =(const CppPlugin&) = delete;
 
-		//插件加载
-		virtual void onLoad()
-		{
-		}
+        //插件加载
+        virtual void onLoad()
+        {
+        }
 
-		//插件启动
-		virtual void onEnable()
-		{
-		}
+        //插件启动
+        virtual void onEnable()
+        {
+        }
 
-		//插件关闭
-		virtual void onDisable()
-		{
-		}
+        //插件关闭
+        virtual void onDisable()
+        {
+        }
 
-	public:
-		//插件信息
-		PluginInfo pluginInfo;
+    public:
+        //插件信息
+        PluginInfo pluginInfo;
 
-	private:
+    private:
 
-	};
+    };
 }
 
 ```
@@ -141,16 +156,16 @@ namespace GroupOperator
 
 namespace qqbot
 {
-	//修改此函数
-	void Register::init()
-	{
-		//添加插件（以GroupOperator为例）
-		//this->addPlugin(std::make_shared<插件命名空间::插件类>());
-		this->addPlugin(std::make_shared<GroupOperator::GroupOperatorPlugin>());
-	}
-	
-	//省略下面代码
-	//...
+    //修改此函数
+    void Register::init()
+    {
+        //添加插件（以GroupOperator为例）
+        //this->addPlugin(std::make_shared<插件命名空间::插件类>());
+        this->addPlugin(std::make_shared<GroupOperator::GroupOperatorPlugin>());
+    }
+    
+    //省略下面代码
+    //...
 }
 
 ```

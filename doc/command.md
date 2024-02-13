@@ -4,7 +4,7 @@
 //群消息处理函数模板
 //args: groupID, senderID, commandName, Args
 using GroupHandler = std::function<void(long long, long long, const std::string&, std::vector<std::string>)>;
-		
+        
 //单人消息处理函数模板
 //args: senderID, commandName, Args
 using UserHandler = std::function<void(long long, const std::string&, std::vector<std::string>)>;

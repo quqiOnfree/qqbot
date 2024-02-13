@@ -1,4 +1,3 @@
-﻿/.vs
-/out
-/include
-/lib
+﻿include/
+lib/
+build/
