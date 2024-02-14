@@ -57,6 +57,12 @@ namespace MIL
                             number = jo.getInt();
                         }
 
+                        if (number < 100 || number > 1600)
+                        {
+                            qqbot::Network::sendGroupMessage(groupID, "参数错误，数值要为100-1600");
+                            return;
+                        }
+
                         if (Args[0] == "a")
                         {
                             qqbot::Network::sendGroupMessage(groupID, std::format("{}对应美军密位：{}", Args[1], (622.0 + 0.237333333 * (1600.0 - number))));

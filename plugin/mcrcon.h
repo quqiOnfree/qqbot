@@ -36,7 +36,8 @@ namespace MCRCON
 
             std::shared_ptr<RCONPackage> localPack(
                 reinterpret_cast<RCONPackage*>(
-                    new char[packSize] {0}));
+                    new char[packSize] {0}),
+                    [](RCONPackage* p) {delete[] reinterpret_cast<char*>(p); });
 
             localPack->type = type;
             localPack->requestID = requestID;
@@ -62,7 +63,8 @@ namespace MCRCON
 
             std::shared_ptr<RCONPackage> localPack(
                 reinterpret_cast<RCONPackage*>(
-                    new char[data.size()] {0}));
+                    new char[data.size()] {0}),
+                    [](RCONPackage* p){delete[] reinterpret_cast<char*>(p); });
 
             memcpy_s(localPack.get(), data.size(), data.c_str(), data.size());
 
@@ -405,25 +407,27 @@ namespace MCRCON
         }
 
     private:
-        asio::io_context                                m_io_context;
-        asio::ip::tcp::socket                            m_serverSocket;
-        EndPoint                                        m_endPoint;
-        std::mt19937                                    m_mt;
+        asio::io_context            m_io_context;
+        asio::ip::tcp::socket       m_serverSocket;
+        EndPoint                    m_endPoint;
+        std::mt19937                m_mt;
 
-        std::atomic<bool>                                m_coroutineIsRunning;
-        std::atomic<bool>                                m_socketIsRunning;
-        std::thread                                        m_workThread;
-        std::thread                                        m_receiveThread;
+        std::atomic<bool>           m_coroutineIsRunning;
+        std::atomic<bool>           m_socketIsRunning;
+        std::thread                 m_workThread;
+        std::thread                 m_receiveThread;
 
-        std::mutex                                        m_coroutineMutex;
-        std::condition_variable                            m_coroutineCV;
+        std::mutex                  m_coroutineMutex;
+        std::condition_variable     m_coroutineCV;
 
-        std::mutex                                        m_queueMutex;
-        std::queue<std::pair<int, std::string>>            m_queue;
-        std::condition_variable                            m_queueCV;
+        std::mutex                  m_queueMutex;
+        std::queue<std::pair<int,
+            std::string>>           m_queue;
+        std::condition_variable     m_queueCV;
 
-        std::mutex                                        m_mapMutex;
-        std::unordered_map<int, long long>                m_requestIDMap;
+        std::mutex                  m_mapMutex;
+        std::unordered_map<int, 
+            long long>              m_requestIDMap;
     };
 
     class MCRCONPlugin : public qqbot::CppPlugin

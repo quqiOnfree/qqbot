@@ -103,7 +103,8 @@ namespace AutoMuter
                 [this](long long group_id, long long user_id, long long message_id, std::string message) -> void {
                 try
                 {
-                    std::shared_lock<std::shared_mutex> sl1(m_MuteType_map_mutex, std::defer_lock), sl2(m_group_map_mutex, std::defer_lock);
+                    std::shared_lock<std::shared_mutex> sl1(m_MuteType_map_mutex, std::defer_lock),
+                                                        sl2(m_group_map_mutex, std::defer_lock);
                     std::lock(sl1, sl2);
 
                     // 不在监管范围内则不判断
@@ -157,9 +158,13 @@ namespace AutoMuter
             std::string description;
         };
 
-        static httplib::Result localGet(const std::string& command, std::initializer_list<std::pair<std::string, std::string>> list)
+        static httplib::Result localGet(const std::string& command,
+                                        std::initializer_list<std::pair<std::string,
+                                            std::string>> list)
         {
-            httplib::Client cli(std::format("http://{}:{}", qqbot::ServerInfo::getPermission().m_gocq_ip, qqbot::ServerInfo::getPermission().m_gocq_port));
+            httplib::Client cli(std::format("http://{}:{}",
+                                            qqbot::ServerInfo::getPermission().m_gocq_ip,
+                                            qqbot::ServerInfo::getPermission().m_gocq_port));
             httplib::Params params;
 
             for (auto i = list.begin(); i != list.end(); i++)
