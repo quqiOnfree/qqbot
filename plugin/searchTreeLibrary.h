@@ -80,13 +80,13 @@ namespace SearchTreeLibrary
             return buffer.top().second;
         }
 
-        static int minDistance(const std::string& word1, const std::string& word2) noexcept
+        static size_t minDistance(const std::string& word1, const std::string& word2) noexcept
         {
-            int n = (int)word1.length();
-            int m = (int)word2.length();
+            size_t n = word1.size();
+            size_t m = word2.size();
             if (n * m == 0) return n + m;
 
-            std::vector<std::vector<int>> D(n + 1, std::vector<int>(m + 1));
+            std::vector<std::vector<size_t>> D(n + 1, std::vector<size_t>(m + 1, 0));
 
             for (int i = 0; i < n + 1; i++)
             {
@@ -101,9 +101,9 @@ namespace SearchTreeLibrary
             {
                 for (int j = 1; j < m + 1; j++)
                 {
-                    int left = D[i - 1][j] + 1;
-                    int down = D[i][j - 1] + 1;
-                    int left_down = D[i - 1][j - 1];
+                    size_t left = D[i - 1][j] + 1;
+                    size_t down = D[i][j - 1] + 1;
+                    size_t left_down = D[i - 1][j - 1];
                     if (word1[i - 1] != word2[j - 1]) left_down += 1;
                     D[i][j] = std::min(left, std::min(down, left_down));
                 }
@@ -111,20 +111,39 @@ namespace SearchTreeLibrary
             return D[n][m];
         }
 
-        static long long kmp(const std::string& match_string, const std::string& pattern) noexcept
+        static long long kmp(const std::string& string, const std::string& pattern) noexcept
         {
-            if (match_string.length() < pattern.length()) return -1;
-
-            for (size_t i = 0; i < match_string.size(); i++)
+            std::unique_ptr<size_t[]> next(new size_t[pattern.size()] {0});
             {
-                size_t j = 0;
-                for (; j < match_string.size() - i && j < pattern.size(); j++)
+                size_t prefix_len = 0;
+                size_t i = 1, size = pattern.size();
+                while (i < size)
                 {
-                    if (match_string[i + j] != pattern[j])
-                        break;
+                    if (pattern[prefix_len] == pattern[i])
+                        next[i++] = ++prefix_len;
+                    else
+                    {
+                        if (!prefix_len) i++;
+                        else prefix_len = next[prefix_len - 1];
+                    }
                 }
+            }
+
+            size_t i = 0, j = 0, size = string.size();
+            while (i < size)
+            {
+                if (string[i] == pattern[j])
+                {
+                    i++;
+                    j++;
+                }
+                else if (j > 0)
+                    j = next[j - 1];
+                else
+                    i++;
+
                 if (j == pattern.size())
-                    return i;
+                    return static_cast<long long>(i - j);
             }
             return -1;
         }

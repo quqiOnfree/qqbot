@@ -24,9 +24,9 @@ namespace MCRCON
     //RCON数据包
     struct RCONPackage
     {
-        int        length;
-        int        requestID;
-        int        type;
+        int     length;
+        int     requestID;
+        int     type;
         char    data[2];
 
         //生成RCONPack
