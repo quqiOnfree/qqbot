@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <set>
 #include <shared_mutex>
+#include <fstream>
 
 #include "cppPlugin.h"
 #include "pluginLibrary.h"
@@ -19,14 +20,41 @@ namespace Weather
     class WeatherPlugin : public qqbot::CppPlugin
     {
     public:
-        WeatherPlugin() : m_apiKey("dffc4517b36352b24303ecd2493658c7")
+        WeatherPlugin()
         {
             qqbot::CppPlugin::pluginInfo.author = "quqiOnfree";
             qqbot::CppPlugin::pluginInfo.name = "Weather";
             qqbot::CppPlugin::pluginInfo.version = "0.0.1";
+
+            if (std::ifstream infile("./plugin_config/weather/config.json"); !infile)
+            {
+                createConfig();
+            }
+
+            try
+            {
+                std::ifstream infile("./plugin_config/weather/config.json");
+
+                qjson::JObject json(qjson::JParser::fastParse(infile));
+                
+                m_apiKey = json["api_key"].getString();
+            }
+            catch (const std::exception& e)
+            {
+                std::cout << ERROR_WITH_STACKTRACE(e.what()) << '\n';
+            }
         }
 
         virtual ~WeatherPlugin() = default;
+
+        void createConfig()
+        {
+            std::filesystem::create_directory("./plugin_config/weather");
+            qjson::JObject json;
+            json["api_key"] = "";
+            std::ofstream outfile("./plugin_config/weather/config.json");
+            outfile << qjson::JWriter::fastFormatWrite(json);
+        }
 
         virtual void onLoad()
         {
@@ -62,6 +90,14 @@ namespace Weather
                     else if (Args.size() > 2)
                     {
                         qqbot::Network::sendGroupMessage(groupID, "参数错误");
+                        return;
+                    }
+
+                    if (m_apiKey.empty())
+                    {
+                        qqbot::Network::sendGroupMessage(groupID,
+                            "请在\"plugin_config/weather/config.json\"填写api密钥\n"
+                            "api密钥在\"https://console.amap.com/\"申请");
                         return;
                     }
 
@@ -145,29 +181,29 @@ namespace Weather
 
             qjson::JObject jo = qjson::JParser::fastParse(result->body);
 
-            if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
+
+            if (jo["status"].getString() != "1" || jo["infocode"].getString() != "10000")
             {
-                qqbot::Network::sendGroupMessage(groupID, std::format(
-                    R"({}-{}的天气：
+                qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
+                return;
+            }
+
+            qqbot::Network::sendGroupMessage(groupID, std::format(
+                R"({}-{}的天气：
 天气状况：{}
 气温：{}℃
 风向：{}风{}级
 空气湿度：{}%
 数据发布时间：{})",
-jo["lives"][0]["province"].getString(),
-jo["lives"][0]["city"].getString(),
-jo["lives"][0]["weather"].getString(),
-jo["lives"][0]["temperature"].getString(),
-jo["lives"][0]["winddirection"].getString(),
-jo["lives"][0]["windpower"].getString(),
-jo["lives"][0]["humidity"].getString(),
-jo["lives"][0]["reporttime"].getString()
-));
-            }
-            else
-            {
-                qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
-            }
+                jo["lives"][0]["province"].getString(),
+                jo["lives"][0]["city"].getString(),
+                jo["lives"][0]["weather"].getString(),
+                jo["lives"][0]["temperature"].getString(),
+                jo["lives"][0]["winddirection"].getString(),
+                jo["lives"][0]["windpower"].getString(),
+                jo["lives"][0]["humidity"].getString(),
+                jo["lives"][0]["reporttime"].getString()
+                ));
         }
 
         void getFutureWeather(const std::string& positon, const std::string& code, long long groupID)
@@ -252,81 +288,82 @@ jo["lives"][0]["reporttime"].getString()
 
             qjson::JObject jo = qjson::JParser::fastParse(result->body);
 
-            if (jo["status"].getString() == "1" && jo["infocode"].getString() == "10000")
+            if (jo["status"].getString() != "1" || jo["infocode"].getString() != "10000")
             {
-                std::string outStr = std::format(
-                    "{}-{}的预报天气：\n",
-                    jo["forecasts"][0]["province"].getString(),
-                    jo["forecasts"][0]["city"].getString()
-                );
-                qjson::list_t& list = jo["forecasts"][0]["casts"].getList();
+                qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
+                return;
+            }
 
-                for (auto i = list.begin(); i != list.end(); i++)
+            std::string outStr = std::format(
+                "{}-{}的预报天气：\n",
+                jo["forecasts"][0]["province"].getString(),
+                jo["forecasts"][0]["city"].getString()
+            );
+            qjson::list_t& list = jo["forecasts"][0]["casts"].getList();
+
+            for (auto i = list.begin(); i != list.end(); i++)
+            {
+                std::string date = (*i)["date"].getString();
+                std::vector<std::string> date_list = split(date, '-');
+                int day = getDayOfWeek(std::stoi(date_list[0]), std::stoi(date_list[1]), std::stoi(date_list[2]));
+                std::string day_string;
+
+                switch (day)
                 {
-                    std::string date = (*i)["date"].getString();
-                    std::vector<std::string> date_list = split(date, '-');
-                    int day = getDayOfWeek(std::stoi(date_list[0]), std::stoi(date_list[1]), std::stoi(date_list[2]));
-                    std::string day_string;
+                case 1:
+                    day_string = "一";
+                    break;
+                case 2:
+                    day_string = "二";
+                    break;
+                case 3:
+                    day_string = "三";
+                    break;
+                case 4:
+                    day_string = "四";
+                    break;
+                case 5:
+                    day_string = "五";
+                    break;
+                case 6:
+                    day_string = "六";
+                    break;
+                case 7:
+                    day_string = "日";
+                    break;
+                default:
+                    break;
+                }
 
-                    switch (day)
-                    {
-                    case 1:
-                        day_string = "一";
-                        break;
-                    case 2:
-                        day_string = "二";
-                        break;
-                    case 3:
-                        day_string = "三";
-                        break;
-                    case 4:
-                        day_string = "四";
-                        break;
-                    case 5:
-                        day_string = "五";
-                        break;
-                    case 6:
-                        day_string = "六";
-                        break;
-                    case 7:
-                        day_string = "日";
-                        break;
-                    default:
-                        break;
-                    }
-
-                    outStr += std::format(R"(--------------------
+                outStr += std::format(R"(--------------------
 日期：{} 星期{}
 天气状况：{}-{}
 气温：{}℃-{}℃
 风向：{}风{}级-{}风{}级
 )",
-date, day_string,
-(*i)["dayweather"].getString(),
-(*i)["nightweather"].getString(),
-(*i)["daytemp"].getString(),
-(*i)["nighttemp"].getString(),
-(*i)["daywind"].getString(),
-(*i)["daypower"].getString(),
-(*i)["nightwind"].getString(),
-(*i)["nightpower"].getString()
-);
-                }
+                    date, day_string,
+                    (*i)["dayweather"].getString(),
+                    (*i)["nightweather"].getString(),
+                    (*i)["daytemp"].getString(),
+                    (*i)["nighttemp"].getString(),
+                    (*i)["daywind"].getString(),
+                    (*i)["daypower"].getString(),
+                    (*i)["nightwind"].getString(),
+                    (*i)["nightpower"].getString()
+                    );
+            }
 
-                qqbot::Network::sendGroupMessage(groupID, outStr);
-            }
-            else
-            {
-                qqbot::Network::sendGroupMessage(groupID, std::format("发生错误，无法获取相应的天气信息：{}", jo["info"].getString()));
-            }
+            qqbot::Network::sendGroupMessage(groupID, outStr);
         }
 
     private:
-        std::unordered_map<std::string, std::unordered_map<std::string, std::string>>    m_cityCode;
-        mutable std::shared_mutex                                                        m_cityCode_mutex;
-        SearchTreeLibrary::SearchTree    m_searchTree;
-        mutable std::shared_mutex        m_searchTree_mutex;
+        std::unordered_map<std::string,
+            std::unordered_map<std::string, std::string>>    
+                                        m_cityCode;
+        mutable std::shared_mutex       m_cityCode_mutex;
+        SearchTreeLibrary::SearchTree   m_searchTree;
+        mutable std::shared_mutex       m_searchTree_mutex;
 
-        std::string m_apiKey;
+        std::string                     m_apiKey;
     };
 }

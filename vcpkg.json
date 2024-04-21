@@ -1,0 +1,11 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "qqbot",
+  "license": "MIT license",
+  "version": "0.0.3",
+  "dependencies": [
+    "cpp-httplib",
+    "openssl",
+    "asio"
+  ]
+}

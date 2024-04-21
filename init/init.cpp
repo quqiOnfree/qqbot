@@ -29,7 +29,7 @@ namespace qqbot
         qjson::JObject getjson;
         try
         {
-            //从go-cqhttp获取到的json消息
+            // 从go-cqhttp获取到的json消息
             getjson = qjson::JParser::fastParse(req.body);
         }
         catch (const std::exception& e)
@@ -38,12 +38,12 @@ namespace qqbot
             return;
         }
 
-        //debug
-        //std::cout << qjson::JWriter::fastFormatWrite(getjson) << '\n';
+        // debug
+        // std::cout << qjson::JWriter::fastFormatWrite(getjson) << '\n';
 
         if (getjson["message_type"] == "private")
         {
-            //当消息类型是私聊类型
+            // 当消息类型是私聊类型
             res = qqbot::privateMethod(req);
             eventRegister.updateUserReceiveEvent(getjson["user_id"].getInt(),
                 getjson["message_id"].getInt(),
@@ -51,7 +51,7 @@ namespace qqbot
         }
         else if (getjson["message_type"] == "group")
         {
-            //当消息类型是群聊类型
+            // 当消息类型是群聊类型
             res = qqbot::groupMethod(req);
             eventRegister.updateGroupReceiveEvent(getjson["group_id"].getInt(),
                 getjson["user_id"].getInt(),
@@ -66,11 +66,11 @@ namespace qqbot
         system("chcp 65001");
 #endif
 
-        //权限组导入
+        // 权限组导入
         permission.init();
         std::cout << "权限组导入成功！\n";
 
-        //测试是否能够连接go-cqhttp
+        // 测试是否能够连接go-cqhttp
         if (!Network::testConnection())
         {
             std::cout << std::format("无法连接至go-cqhttp({}:{})\n", permission.m_gocq_ip, permission.m_gocq_port);
@@ -80,7 +80,7 @@ namespace qqbot
 
         std::filesystem::create_directory("./plugin_config");
 
-        //插件注册
+        // 插件注册
         try
         {
             pluginRegister.init();

@@ -151,10 +151,10 @@ namespace MCRCON
     public:
         struct EndPoint
         {
-            std::string        serverName;
-            std::string        host;
-            unsigned short    port;
-            std::string        password;
+            std::string         serverName;
+            std::string         host;
+            unsigned short      port;
+            std::string         password;
         };
 
         MCServerRCONClient() :
