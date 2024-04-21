@@ -29,6 +29,7 @@ namespace Weather
             if (std::ifstream infile("./plugin_config/weather/config.json"); !infile)
             {
                 createConfig();
+                return;
             }
 
             try
